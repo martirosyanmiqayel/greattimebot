@@ -82,7 +82,8 @@ function defaultSettings() {
       // Формула порога: xp, нужный для достижения уровня L = base * L^exponent.
       levelBaseXp: 100,
       levelExponent: 2,
-      // Награды за уровни: [{ level: 5, roleId: '...' }, ...]
+      // Награды за уровни: [{ level: 5, roleId: 'выдать', removeRoleId: 'снять' }, ...]
+      // roleId/removeRoleId — любой из них можно опустить (null).
       levelRoles: []
     },
     // Anti-Crash — защита от рейда со стороны персонала.
@@ -111,6 +112,12 @@ function defaultSettings() {
         roleDelete: { count: 3, windowSec: 30 },
         memberKick: { count: 3, windowSec: 30 }
       }
+    },
+    // Редактируемые тексты ответов бота (общие для команд). Placeholders: {user}
+    messages: {
+      noPermission: '⛔ Недостаточно прав для этой команды.',
+      adminOnly: '⛔ Команда только для администраторов.',
+      commandError: '⚠️ Произошла ошибка при выполнении команды.'
     },
     // Автоматический backup структуры сервера.
     backup: {
@@ -284,6 +291,14 @@ async function topXp(g, limit = 10) {
   if (error) console.error('[db] topXp:', error.message);
   return data || [];
 }
+/** Позиция пользователя в топе по XP (1 = первый). */
+async function getXpRank(g, u) {
+  const me = await getXp(g, u);
+  const { count, error } = await supabase.from('xp')
+    .select('*', { count: 'exact', head: true }).eq('guild_id', g).gt('xp', Number(me.xp || 0));
+  if (error) console.error('[db] getXpRank:', error.message);
+  return { rank: (count || 0) + 1, xp: Number(me.xp || 0), level: me.level || 0 };
+}
 
 // ---- Whitelist ----
 async function whitelistAdd(g, u, by) {
@@ -437,7 +452,7 @@ module.exports = {
   openTicket, closeTicket, findOpenTicket,
   addReactionRole, findReactionRole, listReactionRoles, deleteReactionRole,
   // XP
-  getXp, addXpDelta, setXpValue, topXp, setXpFormula, xpToLevel, levelToXp,
+  getXp, addXpDelta, setXpValue, topXp, getXpRank, setXpFormula, xpToLevel, levelToXp,
   // Whitelist
   whitelistAdd, whitelistRemove, whitelistHas, whitelistList,
   // Мод-история

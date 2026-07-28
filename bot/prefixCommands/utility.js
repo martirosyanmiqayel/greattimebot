@@ -2,6 +2,7 @@
 
 const { PermissionFlagsBits, EmbedBuilder, ChannelType } = require('discord.js');
 const { fetchUser } = require('../../shared/resolve');
+const { buildUserEmbed } = require('../services/userinfo');
 
 const NUM = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 
@@ -27,23 +28,12 @@ module.exports = [
   },
   {
     name: 'userinfo',
-    aliases: ['ui', 'whois'],
-    description: 'Инфо об участнике: !userinfo [user]',
+    aliases: ['ui', 'whois', 'profile', 'профиль'],
+    description: 'Подробная инфо об участнике: !userinfo [user]',
     async run(ctx) {
       const user = ctx.args[0] ? await fetchUser(ctx.client, ctx.args[0]) : ctx.author;
       if (!user) return ctx.error('Пользователь не найден.');
-      const member = await ctx.guild.members.fetch(user.id).catch(() => null);
-      const embed = new EmbedBuilder().setColor(0x5865f2)
-        .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL() })
-        .addFields(
-          { name: 'ID', value: user.id, inline: true },
-          { name: 'Аккаунт создан', value: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`, inline: true }
-        );
-      if (member) {
-        if (member.joinedTimestamp) embed.addFields({ name: 'Зашёл на сервер', value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`, inline: true });
-        const roles = member.roles.cache.filter((r) => r.id !== ctx.guild.id).map((r) => `<@&${r.id}>`).slice(0, 15);
-        embed.addFields({ name: `Роли (${roles.length})`, value: roles.join(' ') || '—' });
-      }
+      const embed = await buildUserEmbed(ctx.guild, user);
       await ctx.reply({ embeds: [embed], allowedMentions: { parse: [] } });
     }
   },

@@ -46,12 +46,13 @@ module.exports = {
       return;
     }
 
+    const msg = settings.messages || {};
     // Проверка прав.
     if (command.permission && message.member && !message.member.permissions.has(command.permission)) {
-      return message.channel.send('⛔ Недостаточно прав для этой команды.').catch(() => {});
+      return message.channel.send(msg.noPermission || '⛔ Недостаточно прав для этой команды.').catch(() => {});
     }
     if (command.adminOnly && message.member && !message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.channel.send('⛔ Команда только для администраторов.').catch(() => {});
+      return message.channel.send(msg.adminOnly || '⛔ Команда только для администраторов.').catch(() => {});
     }
 
     const ctx = makePrefixContext(message, parts, settings);
@@ -59,7 +60,7 @@ module.exports = {
       await command.run(ctx);
     } catch (err) {
       console.error(`[prefix] Ошибка команды ${name}:`, err);
-      message.channel.send('⚠️ Произошла ошибка при выполнении команды.').catch(() => {});
+      message.channel.send(msg.commandError || '⚠️ Произошла ошибка при выполнении команды.').catch(() => {});
     }
   }
 };

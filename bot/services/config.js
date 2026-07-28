@@ -30,7 +30,10 @@ const CONFIG_KEYS = {
   'anticrash.logChannelId': 'channel',
   'backup.enabled': 'bool',
   'backup.intervalSec': 'int',
-  'backup.keep': 'int'
+  'backup.keep': 'int',
+  'messages.noPermission': 'string',
+  'messages.adminOnly': 'string',
+  'messages.commandError': 'string'
 };
 
 // Короткие псевдонимы для удобства (напр. !config set xp 15).

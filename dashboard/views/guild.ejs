@@ -36,6 +36,7 @@
     <a href="#autorole">🎭 Автороли</a>
     <a href="#reactionroles">✨ Роли по реакции</a>
     <a href="#customcommands">🧩 Свои команды</a>
+    <a href="#messages">💬 Тексты</a>
     <a href="#logging">📜 Логи</a>
     <a href="#tickets">🎫 Тикеты</a>
   </aside>
@@ -105,15 +106,44 @@
     <!-- BACKUP -->
     <section class="module" id="backup">
       <h2>💾 Backup структуры сервера</h2>
-      <p class="muted">Автоматический снимок каналов/ролей/прав. Нужен для отката Anti-Crash и ручного восстановления (<code>!restore &lt;id&gt;</code>).</p>
+      <p class="muted">Снимок каналов/ролей/прав. Нужен для отката Anti-Crash и ручного восстановления.</p>
+      <% if (saved === 'backup_created') { %><div class="notice success">Backup создан ✓</div><% } %>
+      <% if (saved === 'backup_deleted') { %><div class="notice success">Backup удалён ✓</div><% } %>
+      <% if (saved === 'backup_error') { %><div class="notice warn">Не удалось создать backup — проверь, что бот на сервере и у него есть права.</div><% } %>
       <form method="POST" action="/dashboard/<%= guild.id %>/backup">
         <label class="switch"><input type="checkbox" name="backup_enabled" <%= settings.backup.enabled ? 'checked' : '' %> /> Включить авто-backup</label>
         <div class="grid2">
           <label>Интервал (сек, мин. 30)<input type="number" name="intervalSec" min="30" value="<%= settings.backup.intervalSec %>" /></label>
           <label>Сколько копий хранить<input type="number" name="keep" min="1" value="<%= settings.backup.keep %>" /></label>
         </div>
-        <button class="btn" type="submit">Сохранить Backup</button>
+        <button class="btn" type="submit">Сохранить настройки</button>
       </form>
+
+      <h3>Копии</h3>
+      <form method="POST" action="/dashboard/<%= guild.id %>/backup/create" style="margin-bottom:12px;">
+        <button class="btn" type="submit">📸 Создать backup сейчас</button>
+      </form>
+      <% if (backups && backups.length) { %>
+        <table class="rr-table">
+          <thead><tr><th>ID</th><th>Тип</th><th>Создан</th><th></th></tr></thead>
+          <tbody>
+            <% backups.forEach(function(bk){ %>
+              <tr>
+                <td><code>#<%= bk.id %></code></td>
+                <td><%= bk.kind %></td>
+                <td><%= new Date(Number(bk.created_at)).toLocaleString('ru-RU') %></td>
+                <td>
+                  <form method="POST" action="/dashboard/<%= guild.id %>/backup/delete">
+                    <input type="hidden" name="id" value="<%= bk.id %>" />
+                    <button class="btn danger small" type="submit">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <small class="muted">Восстановление — в Discord: <code><%= (settings.prefix || '!') %>restore &lt;id&gt;</code> или <code>/backup restore</code> (создаёт каналы/роли, поэтому делается ботом).</small>
+      <% } else { %><p class="muted">Копий пока нет. Нажми «Создать backup сейчас» или включи авто-backup.</p><% } %>
     </section>
 
     <!-- XP -->
@@ -139,16 +169,18 @@
           </div>
         </fieldset>
         <fieldset>
-          <legend>Роли-награды за уровни (уровень + ID роли)</legend>
+          <legend>Роли за уровни: на каком уровне какую роль выдать и какую снять (ID)</legend>
           <div class="dyn-rows" data-dyn="lvl">
             <% var lr = settings.xp.levelRoles || []; var lrn = Math.max(lr.length + 1, 3); for (var i = 0; i < lrn; i++) { var row = lr[i] || {}; %>
-              <div class="grid2 dyn-row">
+              <div class="grid3 dyn-row">
                 <label>Уровень<input type="number" name="lvl_level" min="1" value="<%= row.level || '' %>" /></label>
-                <label>Роль (ID)<input type="text" name="lvl_role" value="<%= row.roleId || '' %>" /></label>
+                <label>Выдать роль (ID)<input type="text" name="lvl_role" value="<%= row.roleId || '' %>" /></label>
+                <label>Снять роль (ID)<input type="text" name="lvl_remove" value="<%= row.removeRoleId || '' %>" /></label>
               </div>
             <% } %>
           </div>
-          <button type="button" class="btn ghost small" data-add="lvl">+ ещё роль-награда</button>
+          <button type="button" class="btn ghost small" data-add="lvl">+ ещё уровень</button>
+          <small class="muted">«Снять роль» удобно, чтобы убирать роль прошлого уровня. Любое поле роли можно оставить пустым.</small>
         </fieldset>
         <button class="btn" type="submit">Сохранить XP</button>
       </form>
@@ -296,6 +328,18 @@
           </tbody>
         </table>
       <% } else { %><p class="muted">Пока нет своих команд.</p><% } %>
+    </section>
+
+    <!-- ТЕКСТЫ ОТВЕТОВ -->
+    <section class="module" id="messages">
+      <h2>💬 Тексты ответов бота</h2>
+      <p class="muted">Общие ответы команд можно изменить под себя. Другие тексты редактируются в своих разделах: приветствия — 👋, ЛС при наказаниях — 🔨 Модерация, повышение уровня — ⭐ XP, тикеты — 🎫.</p>
+      <form method="POST" action="/dashboard/<%= guild.id %>/messages">
+        <label>Недостаточно прав<input type="text" name="noPermission" value="<%= settings.messages.noPermission %>" /></label>
+        <label>Только для админов<input type="text" name="adminOnly" value="<%= settings.messages.adminOnly %>" /></label>
+        <label>Ошибка выполнения команды<input type="text" name="commandError" value="<%= settings.messages.commandError %>" /></label>
+        <button class="btn" type="submit">Сохранить тексты</button>
+      </form>
     </section>
 
     <!-- ЛОГИ -->

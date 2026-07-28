@@ -16,10 +16,11 @@ const arr = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
 // ---- Страница модулей ----
 router.get('/', async (req, res) => {
-  const [reactionRoles, whitelist, customCommands] = await Promise.all([
+  const [reactionRoles, whitelist, customCommands, backups] = await Promise.all([
     db.listReactionRoles(req.guild.id),
     db.whitelistList(req.guild.id),
-    db.listCustomCommands(req.guild.id)
+    db.listCustomCommands(req.guild.id),
+    db.listBackups(req.guild.id, 20)
   ]);
   res.render('guild', {
     guild: req.guild,
@@ -28,7 +29,8 @@ router.get('/', async (req, res) => {
     botPresent: req.botPresent,
     reactionRoles,
     whitelist,
-    customCommands
+    customCommands,
+    backups
   });
 });
 
@@ -107,14 +109,16 @@ router.post('/logging', async (req, res) => {
 // ---- XP / уровни ----
 router.post('/xp', async (req, res) => {
   const b = req.body;
-  // Роли-награды: параллельные массивы lvl_level[] и lvl_role[].
+  // Роли-награды: параллельные массивы lvl_level[], lvl_role[] (выдать), lvl_remove[] (снять).
   const levels = arr(b.lvl_level);
   const roleIds = arr(b.lvl_role);
+  const removeIds = arr(b.lvl_remove);
   const levelRoles = [];
   for (let i = 0; i < levels.length; i++) {
     const lv = parseInt(levels[i], 10);
     const rid = (roleIds[i] || '').trim();
-    if (!Number.isNaN(lv) && rid) levelRoles.push({ level: lv, roleId: rid });
+    const rem = (removeIds[i] || '').trim();
+    if (!Number.isNaN(lv) && (rid || rem)) levelRoles.push({ level: lv, roleId: rid || null, removeRoleId: rem || null });
   }
   await db.updateSettings(req.guild.id, {
     xp: {
@@ -162,7 +166,7 @@ router.post('/anticrash', async (req, res) => {
   res.redirect(`/dashboard/${req.guild.id}?saved=anticrash#anticrash`);
 });
 
-// ---- Backup ----
+// ---- Backup: настройки ----
 router.post('/backup', async (req, res) => {
   const b = req.body;
   await db.updateSettings(req.guild.id, {
@@ -173,6 +177,36 @@ router.post('/backup', async (req, res) => {
     }
   });
   res.redirect(`/dashboard/${req.guild.id}?saved=backup#backup`);
+});
+
+// ---- Backup: создать снимок прямо из панели (через бот-токен) ----
+router.post('/backup/create', async (req, res) => {
+  try {
+    const snap = await discord.buildSnapshot(req.guild.id, req.guild.name);
+    await db.saveBackup(req.guild.id, snap, 'manual', req.settings.backup.keep || 20);
+    res.redirect(`/dashboard/${req.guild.id}?saved=backup_created#backup`);
+  } catch (err) {
+    console.error('[dashboard] backup create:', err.message);
+    res.redirect(`/dashboard/${req.guild.id}?saved=backup_error#backup`);
+  }
+});
+router.post('/backup/delete', async (req, res) => {
+  const id = parseInt(req.body.id, 10);
+  if (!Number.isNaN(id)) await db.deleteBackup(req.guild.id, id);
+  res.redirect(`/dashboard/${req.guild.id}?saved=backup_deleted#backup`);
+});
+
+// ---- Тексты ответов бота ----
+router.post('/messages', async (req, res) => {
+  const b = req.body;
+  await db.updateSettings(req.guild.id, {
+    messages: {
+      noPermission: b.noPermission || '',
+      adminOnly: b.adminOnly || '',
+      commandError: b.commandError || ''
+    }
+  });
+  res.redirect(`/dashboard/${req.guild.id}?saved=messages#messages`);
 });
 
 // ---- Whitelist Anti-Crash (add / remove) ----

@@ -38,12 +38,21 @@ async function setXp(guild, settings, userId, value, reason, actorId) {
   return { row, oldLevel, newLevel: row.level, leveledUp: row.level > oldLevel };
 }
 
-/** Выдать роли-награды за все уровни <= newLevel, которых у участника ещё нет. */
+/**
+ * Применить награды за все уровни <= newLevel: выдать roleId и снять removeRoleId.
+ * Обрабатываем по возрастанию уровня, чтобы снятие на старших уровнях перекрывало
+ * выдачу на младших (напр. на 10 снять роль, выданную на 5).
+ */
 async function grantLevelRoles(guild, settings, member, newLevel) {
-  const rewards = (settings.xp.levelRoles || []).filter((r) => r && r.roleId && r.level <= newLevel);
+  const rewards = (settings.xp.levelRoles || [])
+    .filter((r) => r && r.level <= newLevel)
+    .sort((a, b) => a.level - b.level);
   for (const r of rewards) {
-    if (!member.roles.cache.has(r.roleId) && guild.roles.cache.has(r.roleId)) {
+    if (r.roleId && guild.roles.cache.has(r.roleId) && !member.roles.cache.has(r.roleId)) {
       await member.roles.add(r.roleId, `Награда за уровень ${r.level}`).catch(() => {});
+    }
+    if (r.removeRoleId && guild.roles.cache.has(r.removeRoleId) && member.roles.cache.has(r.removeRoleId)) {
+      await member.roles.remove(r.removeRoleId, `Снятие роли на уровне ${r.level}`).catch(() => {});
     }
   }
 }

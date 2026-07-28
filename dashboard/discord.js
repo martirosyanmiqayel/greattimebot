@@ -42,4 +42,41 @@ function parseEmoji(input) {
   return { key: s, reaction: s, custom: false };
 }
 
-module.exports = { botFetch, postMessage, addReaction, parseEmoji };
+async function getChannels(guildId) {
+  const r = await botFetch(`/guilds/${guildId}/channels`);
+  if (!r.ok) throw new Error(`getChannels ${r.status}`);
+  return r.json();
+}
+async function getRoles(guildId) {
+  const r = await botFetch(`/guilds/${guildId}/roles`);
+  if (!r.ok) throw new Error(`getRoles ${r.status}`);
+  return r.json();
+}
+
+/**
+ * Строит snapshot сервера в том же формате, что и бот (bot/services/backup.js),
+ * чтобы !restore / кнопка восстановления в Discord его понимали.
+ */
+async function buildSnapshot(guildId, guildName) {
+  const [channels, roles] = await Promise.all([getChannels(guildId), getRoles(guildId)]);
+  return {
+    guildId,
+    guildName,
+    takenAt: Date.now(),
+    roles: roles.filter((r) => r.id !== guildId).map((r) => ({
+      id: r.id, name: r.name, color: r.color, hoist: r.hoist, position: r.position,
+      permissions: String(r.permissions), mentionable: r.mentionable, managed: r.managed
+    })),
+    channels: channels.map((c) => ({
+      id: c.id, name: c.name, type: c.type, parentId: c.parent_id || null,
+      position: c.position ?? 0, topic: c.topic ?? null, nsfw: c.nsfw ?? false,
+      rateLimitPerUser: c.rate_limit_per_user ?? 0, bitrate: c.bitrate ?? null, userLimit: c.user_limit ?? null,
+      overwrites: (c.permission_overwrites || []).map((o) => ({
+        id: o.id, type: typeof o.type === 'number' ? o.type : (o.type === 'role' ? 0 : 1),
+        allow: String(o.allow), deny: String(o.deny)
+      }))
+    }))
+  };
+}
+
+module.exports = { botFetch, postMessage, addReaction, parseEmoji, getChannels, getRoles, buildSnapshot };
