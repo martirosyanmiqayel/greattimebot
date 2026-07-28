@@ -1,0 +1,34 @@
+<%- include('partials/head', { title: 'Мои серверы' }) %>
+
+<h1>Выбери сервер</h1>
+<p class="muted">Показаны серверы, где у тебя есть право «Администратор».</p>
+
+<% if (inviteUrl) { %>
+  <p><a class="btn" href="<%= inviteUrl %>" target="_blank" rel="noopener">➕ Добавить бота на сервер</a></p>
+<% } %>
+
+<% if (!guilds.length) { %>
+  <div class="notice">
+    Нет доступных серверов. Убедись, что ты админ где-то — и что бот добавлен на этот сервер.
+  </div>
+<% } %>
+
+<div class="guild-grid">
+  <% guilds.forEach(function(g) { %>
+    <a class="guild-card" href="/dashboard/<%= g.id %>">
+      <% if (g.icon) { %>
+        <img src="https://cdn.discordapp.com/icons/<%= g.id %>/<%= g.icon %>.png" alt="" />
+      <% } else { %>
+        <div class="guild-icon-fallback"><%= g.name.charAt(0) %></div>
+      <% } %>
+      <span><%= g.name %></span>
+      <% if (g.botPresent) { %>
+        <span class="badge ok">✓ бот добавлен</span>
+      <% } else { %>
+        <span class="badge warn">бот не добавлен</span>
+      <% } %>
+    </a>
+  <% }) %>
+</div>
+
+<%- include('partials/foot') %>

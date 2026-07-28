@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== 'undefined' ? title : 'GreatTime Bot — панель' %></title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">🎉 GreatTime Bot</a>
+    <nav>
+      <a href="/commands">Команды</a>
+      <a href="/bot">О боте</a>
+      <% if (inviteUrl) { %>
+        <a class="btn ghost" href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить бота</a>
+      <% } %>
+      <% if (user) { %>
+        <a href="/dashboard">Мои серверы</a>
+        <span class="me">
+          <%= user.global_name || user.username %>
+        </span>
+        <a class="btn ghost" href="/logout">Выйти</a>
+      <% } else { %>
+        <a class="btn" href="/login">Войти через Discord</a>
+      <% } %>
+    </nav>
+  </header>
+  <main class="container">

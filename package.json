@@ -1,0 +1,24 @@
+{
+  "name": "greattime-bot",
+  "version": "1.0.0",
+  "description": "GreatTime Bot — Discord-бот с веб-дашбордом: модерация, автомод, приветствия, автороли, reaction-роли, тикеты, логи, утилиты.",
+  "type": "commonjs",
+  "scripts": {
+    "deploy": "node bot/deploy-commands.js",
+    "bot": "node bot/index.js",
+    "dashboard": "node dashboard/server.js",
+    "start": "concurrently -n bot,web -c blue,green \"npm run bot\" \"npm run dashboard\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "concurrently": "^9.0.1",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.0",
+    "express-session": "^1.18.1"
+  }
+}

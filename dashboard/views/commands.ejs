@@ -1,0 +1,70 @@
+<%- include('partials/head', { title: 'Команды — GreatTime Bot' }) %>
+
+<section class="page-head">
+  <h1>Команды бота</h1>
+  <p class="lead">
+    Все команды доступны как <strong>slash</strong> (<code>/</code>) и/или <strong>префикс</strong> (<code>!</code>).
+    Префикс можно сменить: <code>!config set prefix &lt;символ&gt;</code>.
+  </p>
+  <div class="stat-row">
+    <span class="stat"><b><%= stats.total %></b> команд</span>
+    <span class="stat"><b><%= stats.slash %></b> slash</span>
+    <span class="stat"><b><%= stats.prefix %></b> префикс</span>
+    <span class="stat"><b><%= stats.both %></b> в обоих режимах</span>
+  </div>
+  <input id="cmd-search" class="cmd-search" type="text" placeholder="🔍 Поиск команды..." autocomplete="off" />
+</section>
+
+<% catalog.forEach(function (group) { %>
+  <section class="module cmd-group" data-group>
+    <h2><%= group.title %></h2>
+    <div class="cmd-list">
+      <% group.commands.forEach(function (c) { %>
+        <div class="cmd" data-cmd="<%= (c.name + ' ' + (c.aliases||[]).join(' ') + ' ' + (c.description||'')).toLowerCase() %>">
+          <div class="cmd-top">
+            <span class="cmd-name"><%= c.name %></span>
+            <% if (c.slash) { %><span class="tag slash">slash</span><% } %>
+            <% if (c.prefix) { %><span class="tag prefix">!</span><% } %>
+            <% if (c.perm) { %><span class="tag perm">🔒 <%= c.perm %></span><% } %>
+          </div>
+          <div class="cmd-desc"><%= c.description || '' %></div>
+          <div class="cmd-usage">
+            <% if (c.slashUsage) { %><code><%= c.slashUsage %></code><% } %>
+            <% if (c.prefixUsage) { %><code><%= c.prefixUsage %></code><% } %>
+            <% if (c.subs && c.subs.length) { %>
+              <span class="cmd-subs">подкоманды: <% c.subs.forEach(function (s, i) { %><code><%= s %></code><% }) %></span>
+            <% } %>
+            <% if (c.aliases && c.aliases.length) { %>
+              <span class="cmd-alias">алиасы: <% c.aliases.forEach(function (a) { %><code>!<%= a %></code><% }) %></span>
+            <% } %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+<% }) %>
+
+<p id="cmd-empty" class="muted" style="display:none; text-align:center;">Ничего не найдено.</p>
+
+<script>
+  (function () {
+    var input = document.getElementById('cmd-search');
+    var empty = document.getElementById('cmd-empty');
+    input.addEventListener('input', function () {
+      var q = input.value.trim().toLowerCase();
+      var anyVisible = false;
+      document.querySelectorAll('[data-group]').forEach(function (group) {
+        var groupVisible = false;
+        group.querySelectorAll('.cmd').forEach(function (cmd) {
+          var match = !q || cmd.getAttribute('data-cmd').indexOf(q) !== -1;
+          cmd.style.display = match ? '' : 'none';
+          if (match) { groupVisible = true; anyVisible = true; }
+        });
+        group.style.display = groupVisible ? '' : 'none';
+      });
+      empty.style.display = anyVisible ? 'none' : '';
+    });
+  })();
+</script>
+
+<%- include('partials/foot') %>

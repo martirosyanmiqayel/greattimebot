@@ -1,0 +1,54 @@
+<%- include('partials/head', { title: 'О боте — GreatTime Bot' }) %>
+
+<section class="page-head">
+  <div class="bot-hero">
+    <% if (bot && bot.avatar) { %>
+      <img class="bot-avatar" src="<%= bot.avatar %>" alt="avatar" />
+    <% } else { %>
+      <div class="bot-avatar fallback">🎉</div>
+    <% } %>
+    <div>
+      <h1><%= bot ? bot.name : 'GreatTime Bot' %></h1>
+      <p class="muted">
+        <% if (bot) { %>ID: <code><%= bot.id %></code> · <% } %>
+        Мультифункциональный бот с защитой сервера, XP-системой и веб-панелью.
+      </p>
+      <div class="hero-actions">
+        <a class="btn" href="/commands">📖 Все команды</a>
+        <% if (inviteUrl) { %><a class="btn ghost" href="<%= inviteUrl %>" target="_blank" rel="noopener">➕ Добавить на сервер</a><% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <span class="stat"><b><%= serverCount %></b> серверов</span>
+    <span class="stat"><b><%= stats.total %></b> команд</span>
+    <span class="stat"><b><%= stats.categories %></b> категорий</span>
+    <span class="stat"><b>24/7</b> режим</span>
+  </div>
+</section>
+
+<section class="features">
+  <div class="card"><h3>🛡️ Anti-Crash</h3><p>Защита от рейда персонала: снятие ролей, timeout и авто-откат удалённых каналов/ролей через аудит-лог.</p></div>
+  <div class="card"><h3>💾 Backup</h3><p>Авто-снимок структуры сервера каждые 30–60 сек и восстановление командой <code>!restore</code>.</p></div>
+  <div class="card"><h3>⭐ XP и уровни</h3><p>Опыт за сообщения и голосовые, топ, настраиваемая формула уровней и роли-награды.</p></div>
+  <div class="card"><h3>🔨 Модерация</h3><p>Временные баны/муты, история наказаний, <code>!checkmute</code>, <code>!history</code>, варны.</p></div>
+  <div class="card"><h3>🤖 Автомод</h3><p>Фильтр слов, ссылок, инвайтов и массовых упоминаний с настраиваемым наказанием.</p></div>
+  <div class="card"><h3>📜 Логи</h3><p>Кто/что/когда: каналы, роли, баны, вебхуки — отдельно общий канал и канал Anti-Crash.</p></div>
+  <div class="card"><h3>🎫 Тикеты</h3><p>Панель с кнопкой, приватные каналы, закрытие в один клик.</p></div>
+  <div class="card"><h3>🎭 Reaction-роли</h3><p>Выдача ролей по клику на эмодзи под сообщением.</p></div>
+  <div class="card"><h3>⚙️ Конфиг командами</h3><p><code>!config set/get/list</code> — меняй настройки прямо из Discord, без правки кода.</p></div>
+</section>
+
+<section class="module">
+  <h2>Как начать</h2>
+  <ol class="steps">
+    <li>Добавь бота на сервер и выдай права: <em>View Audit Log, Manage Channels/Roles/Server, Ban/Moderate Members</em>.</li>
+    <li>Включи модули: <code>!config set anticrash on</code>, <code>!config set backup on</code>, <code>!config set xp on</code>.</li>
+    <li>Задай каналы логов: <code>!config set logging.channelId #канал</code>, <code>!config set anticrash.logChannelId #канал</code>.</li>
+    <li>Добавь доверенных: <code>!whitelist add @user</code>. Проверь статус: <code>!security</code>.</li>
+  </ol>
+  <p class="muted hint">Полный список настраиваемых ключей — команда <code>!config list</code> или страница <a href="/commands">команд</a>.</p>
+</section>
+
+<%- include('partials/foot') %>

@@ -1,0 +1,188 @@
+<%- include('partials/head', { title: guild.name + ' — настройки' }) %>
+
+<a class="back" href="/dashboard">← Все серверы</a>
+<div class="guild-header">
+  <h1><%= guild.name %></h1>
+  <% if (typeof botPresent !== 'undefined') { %>
+    <span class="badge <%= botPresent ? 'ok' : 'warn' %>"><%= botPresent ? '✓ бот на сервере' : 'бота нет на сервере' %></span>
+  <% } %>
+</div>
+
+<% if (typeof botPresent !== 'undefined' && !botPresent) { %>
+  <div class="notice warn">
+    ⚠️ Бота <b>GreatTime</b> нет на этом сервере — настройки сохранятся, но применять их некому.
+    <% if (inviteUrl) { %><a href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить бота →</a><% } %>
+    <br><small>Если уже добавил — убедись, что процесс бота запущен (<code>npm run bot</code>) и он онлайн.</small>
+  </div>
+<% } %>
+
+<% if (saved === 'reactionroles') { %><div class="notice success">Панель ролей создана ✓</div><% } %>
+<% if (saved === 'rr_deleted') { %><div class="notice success">Привязка роли удалена ✓</div><% } %>
+<% if (saved === 'rr_error') { %><div class="notice warn">Укажи ID канала и хотя бы одну пару «эмодзи + роль».</div><% } %>
+<% if (saved && !['reactionroles','rr_deleted','rr_error'].includes(saved)) { %><div class="notice success">Сохранено ✓</div><% } %>
+
+<p class="muted hint">
+  ID каналов/ролей: включи в Discord «Режим разработчика» (Настройки → Расширенные), затем ПКМ → «Копировать ID».
+  В текстах доступны плейсхолдеры — они подставляются автоматически.
+</p>
+
+<div class="layout">
+  <aside class="sidenav">
+    <a href="#moderation">🛡️ Модерация</a>
+    <a href="#welcome">👋 Приветствия</a>
+    <a href="#autorole">🎭 Автороли</a>
+    <a href="#reactionroles">✨ Роли по реакции</a>
+    <a href="#logging">📜 Логи</a>
+    <a href="#tickets">🎫 Тикеты</a>
+  </aside>
+
+  <div class="content">
+
+    <!-- МОДЕРАЦИЯ -->
+    <section class="module" id="moderation">
+      <h2>🛡️ Модерация и автомод</h2>
+      <form method="POST" action="/dashboard/<%= guild.id %>/moderation">
+        <label class="switch"><input type="checkbox" name="mod_enabled" <%= settings.moderation.enabled ? 'checked' : '' %> /> Включить модерацию</label>
+        <div class="grid2">
+          <label>Канал логов модерации (ID)<input type="text" name="logChannelId" value="<%= settings.moderation.logChannelId || '' %>" /></label>
+          <label>Роль для мьюта (ID, опционально)<input type="text" name="muteRoleId" value="<%= settings.moderation.muteRoleId || '' %>" /></label>
+        </div>
+        <label class="switch"><input type="checkbox" name="dmOnPunish" <%= settings.moderation.dmOnPunish ? 'checked' : '' %> /> Писать нарушителю в ЛС</label>
+
+        <fieldset>
+          <legend>Тексты в ЛС (плейсхолдеры: {server} {reason} {moderator} {duration})</legend>
+          <label>При бане<input type="text" name="banDm" value="<%= settings.moderation.banDm %>" /></label>
+          <label>При кике<input type="text" name="kickDm" value="<%= settings.moderation.kickDm %>" /></label>
+          <label>При варне<input type="text" name="warnDm" value="<%= settings.moderation.warnDm %>" /></label>
+          <label>При мьюте<input type="text" name="muteDm" value="<%= settings.moderation.muteDm %>" /></label>
+        </fieldset>
+
+        <hr />
+        <label class="switch"><input type="checkbox" name="automod_enabled" <%= settings.automod.enabled ? 'checked' : '' %> /> Включить автомодерацию</label>
+        <label>Запрещённые слова (по одному на строку)<textarea name="blockedWords" rows="3"><%= (settings.automod.blockedWords || []).join('\n') %></textarea></label>
+        <div class="grid2">
+          <label class="switch"><input type="checkbox" name="blockInvites" <%= settings.automod.blockInvites ? 'checked' : '' %> /> Блокировать приглашения</label>
+          <label class="switch"><input type="checkbox" name="blockLinks" <%= settings.automod.blockLinks ? 'checked' : '' %> /> Блокировать ссылки</label>
+        </div>
+        <div class="grid2">
+          <label>Макс. упоминаний (0 = выкл)<input type="number" name="maxMentions" min="0" value="<%= settings.automod.maxMentions %>" /></label>
+          <label>Наказание
+            <select name="punishment">
+              <% ['delete','warn','mute','kick'].forEach(function(p){ %>
+                <option value="<%= p %>" <%= settings.automod.punishment === p ? 'selected' : '' %>><%= p %></option>
+              <% }) %>
+            </select>
+          </label>
+        </div>
+        <label>Уведомление в канал (плейсхолдеры: {user} {reason})<input type="text" name="noticeMessage" value="<%= settings.automod.noticeMessage %>" /></label>
+        <button class="btn" type="submit">Сохранить модерацию</button>
+      </form>
+    </section>
+
+    <!-- ПРИВЕТСТВИЯ -->
+    <section class="module" id="welcome">
+      <h2>👋 Приветствия и прощания</h2>
+      <form method="POST" action="/dashboard/<%= guild.id %>/welcome">
+        <label class="switch"><input type="checkbox" name="welcome_enabled" <%= settings.welcome.enabled ? 'checked' : '' %> /> Включить приветствия</label>
+        <label>Канал приветствий (ID)<input type="text" name="welcomeChannelId" value="<%= settings.welcome.channelId || '' %>" /></label>
+        <label>Текст приветствия<textarea name="welcomeMessage" rows="2"><%= settings.welcome.message %></textarea><small>Плейсхолдеры: {user} {username} {server} {count}</small></label>
+        <label>Приветствие в ЛС (опционально)<textarea name="dmMessage" rows="2"><%= settings.welcome.dmMessage || '' %></textarea></label>
+        <hr />
+        <label class="switch"><input type="checkbox" name="goodbye_enabled" <%= settings.goodbye.enabled ? 'checked' : '' %> /> Включить прощания</label>
+        <label>Канал прощаний (ID)<input type="text" name="goodbyeChannelId" value="<%= settings.goodbye.channelId || '' %>" /></label>
+        <label>Текст прощания<textarea name="goodbyeMessage" rows="2"><%= settings.goodbye.message %></textarea></label>
+        <button class="btn" type="submit">Сохранить приветствия</button>
+      </form>
+    </section>
+
+    <!-- АВТОРОЛИ -->
+    <section class="module" id="autorole">
+      <h2>🎭 Автороли</h2>
+      <form method="POST" action="/dashboard/<%= guild.id %>/autorole">
+        <label class="switch"><input type="checkbox" name="autorole_enabled" <%= settings.autorole.enabled ? 'checked' : '' %> /> Выдавать роли новичкам автоматически</label>
+        <label>ID ролей (по одному на строку)<textarea name="roleIds" rows="3"><%= (settings.autorole.roleIds || []).join('\n') %></textarea></label>
+        <button class="btn" type="submit">Сохранить автороли</button>
+      </form>
+    </section>
+
+    <!-- РОЛИ ПО РЕАКЦИИ -->
+    <section class="module" id="reactionroles">
+      <h2>✨ Роли по реакции</h2>
+      <p class="muted">Бот опубликует сообщение в указанном канале и повесит реакции. Кто нажмёт реакцию — получит роль; уберёт — роль снимется.</p>
+      <form method="POST" action="/dashboard/<%= guild.id %>/reactionroles">
+        <label>Канал для публикации (ID)<input type="text" name="channelId" placeholder="123456789012345678" required /></label>
+        <label>Текст сообщения<textarea name="message" rows="2">Выбери себе роль реакцией ниже 👇</textarea></label>
+        <div class="rr-rows">
+          <% for (let i = 0; i < 5; i++) { %>
+            <div class="grid2">
+              <label>Эмодзи<input type="text" name="emoji" placeholder="😄 или name:id" /></label>
+              <label>Роль (ID)<input type="text" name="role" placeholder="ID роли" /></label>
+            </div>
+          <% } %>
+        </div>
+        <small class="muted">Заполни столько пар, сколько нужно. Кастомный эмодзи — в формате <code>name:id</code>.</small>
+        <button class="btn" type="submit">Создать панель ролей</button>
+      </form>
+
+      <% if (reactionRoles && reactionRoles.length) { %>
+        <h3>Активные привязки</h3>
+        <table class="rr-table">
+          <thead><tr><th>Эмодзи</th><th>Роль</th><th>Сообщение</th><th></th></tr></thead>
+          <tbody>
+            <% reactionRoles.forEach(function(rr){ %>
+              <tr>
+                <td><%= rr.emoji %></td>
+                <td><@&<%= rr.role_id %>></td>
+                <td><code><%= rr.message_id %></code></td>
+                <td>
+                  <form method="POST" action="/dashboard/<%= guild.id %>/reactionroles/delete">
+                    <input type="hidden" name="id" value="<%= rr.id %>" />
+                    <button class="btn danger small" type="submit">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+    </section>
+
+    <!-- ЛОГИ -->
+    <section class="module" id="logging">
+      <h2>📜 Логирование</h2>
+      <form method="POST" action="/dashboard/<%= guild.id %>/logging">
+        <label class="switch"><input type="checkbox" name="logging_enabled" <%= settings.logging.enabled ? 'checked' : '' %> /> Включить логи</label>
+        <label>Канал логов (ID)<input type="text" name="logChannelId" value="<%= settings.logging.channelId || '' %>" /></label>
+        <div class="checks">
+          <label class="switch"><input type="checkbox" name="ev_messageDelete" <%= settings.logging.events.messageDelete ? 'checked' : '' %> /> Удаление</label>
+          <label class="switch"><input type="checkbox" name="ev_messageEdit" <%= settings.logging.events.messageEdit ? 'checked' : '' %> /> Редактирование</label>
+          <label class="switch"><input type="checkbox" name="ev_memberJoin" <%= settings.logging.events.memberJoin ? 'checked' : '' %> /> Входы</label>
+          <label class="switch"><input type="checkbox" name="ev_memberLeave" <%= settings.logging.events.memberLeave ? 'checked' : '' %> /> Выходы</label>
+        </div>
+        <button class="btn" type="submit">Сохранить логи</button>
+      </form>
+    </section>
+
+    <!-- ТИКЕТЫ -->
+    <section class="module" id="tickets">
+      <h2>🎫 Тикеты</h2>
+      <form method="POST" action="/dashboard/<%= guild.id %>/tickets">
+        <label class="switch"><input type="checkbox" name="tickets_enabled" <%= settings.tickets.enabled ? 'checked' : '' %> /> Включить тикеты</label>
+        <div class="grid2">
+          <label>Категория для тикетов (ID)<input type="text" name="categoryId" value="<%= settings.tickets.categoryId || '' %>" /></label>
+          <label>Роль поддержки (ID)<input type="text" name="supportRoleId" value="<%= settings.tickets.supportRoleId || '' %>" /></label>
+        </div>
+        <label>Заголовок панели<input type="text" name="panelTitle" value="<%= settings.tickets.panelTitle %>" /></label>
+        <label>Описание панели<textarea name="panelDescription" rows="2"><%= settings.tickets.panelDescription %></textarea></label>
+        <label>Текст на кнопке<input type="text" name="panelButtonLabel" value="<%= settings.tickets.panelButtonLabel %>" /></label>
+        <label>Приветствие внутри тикета<textarea name="ticketMessage" rows="2"><%= settings.tickets.welcomeMessage %></textarea></label>
+        <label>Сообщение при закрытии<input type="text" name="closeMessage" value="<%= settings.tickets.closeMessage %>" /></label>
+        <button class="btn" type="submit">Сохранить тикеты</button>
+      </form>
+      <p class="muted">Отправить панель в канал: команда <code>/ticket-panel</code>. Закрыть тикет: кнопка «Закрыть» или команда <code>/close</code>.</p>
+    </section>
+
+  </div>
+</div>
+
+<%- include('partials/foot') %>

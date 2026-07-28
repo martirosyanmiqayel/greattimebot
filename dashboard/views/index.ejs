@@ -1,0 +1,34 @@
+<%- include('partials/head', { title: 'GreatTime Bot' }) %>
+
+<section class="hero">
+  <h1>Панель управления ботом GreatTime</h1>
+  <p class="lead">
+    Модерация, автомодерация, приветствия, автороли, reaction-роли, тикеты и логи —
+    всё настраивается здесь, без правки кода. Изменения бот подхватывает сразу.
+  </p>
+  <div class="hero-actions">
+    <% if (user) { %>
+      <a class="btn big" href="/dashboard">Перейти к серверам →</a>
+    <% } else { %>
+      <a class="btn big" href="/login">Войти через Discord</a>
+    <% } %>
+    <a class="btn big ghost" href="/commands">📖 Все команды</a>
+    <% if (inviteUrl) { %>
+      <a class="btn big ghost" href="<%= inviteUrl %>" target="_blank" rel="noopener">➕ Добавить бота на сервер</a>
+    <% } %>
+  </div>
+</section>
+
+<section class="features">
+  <div class="card"><h3>🛡️ Anti-Crash</h3><p>Защита от рейда персонала: снятие ролей, timeout и авто-откат удалённого через аудит-лог.</p></div>
+  <div class="card"><h3>💾 Backup</h3><p>Авто-снимок структуры сервера и восстановление одной командой.</p></div>
+  <div class="card"><h3>⭐ XP и уровни</h3><p>Опыт за сообщения и голосовые, топ, роли-награды за уровни.</p></div>
+  <div class="card"><h3>🔨 Модерация</h3><p>Временные баны/муты, история наказаний, варны, чистка чата.</p></div>
+  <div class="card"><h3>🤖 Автомод</h3><p>Фильтр слов, ссылок, инвайтов и массовых упоминаний.</p></div>
+  <div class="card"><h3>🎭 Reaction-роли</h3><p>Роли по клику на эмодзи под сообщением.</p></div>
+  <div class="card"><h3>🎫 Тикеты</h3><p>Кнопка поддержки, приватные каналы, закрытие в один клик.</p></div>
+  <div class="card"><h3>📜 Логи</h3><p>Кто/что/когда: каналы, роли, баны, вебхуки + отдельный канал Anti-Crash.</p></div>
+  <div class="card"><h3>⚙️ Конфиг командами</h3><p><code>!config</code> — меняй настройки прямо из Discord, без правки кода.</p></div>
+</section>
+
+<%- include('partials/foot') %>
