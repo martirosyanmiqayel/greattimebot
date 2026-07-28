@@ -404,8 +404,35 @@ async function deleteBackup(g, id) {
   return data ? data.length : 0;
 }
 
+// ---- Кастомные команды ----
+async function addCustomCommand(g, name, response, by) {
+  const { error } = await supabase.from('custom_commands')
+    .upsert({ guild_id: g, name: name.toLowerCase(), response, created_by: by || null, created_at: Date.now() }, { onConflict: 'guild_id,name' });
+  if (error) console.error('[db] addCustomCommand:', error.message);
+  return !error;
+}
+async function removeCustomCommand(g, name) {
+  const { data, error } = await supabase.from('custom_commands').delete()
+    .eq('guild_id', g).eq('name', name.toLowerCase()).select('name');
+  if (error) console.error('[db] removeCustomCommand:', error.message);
+  return data ? data.length : 0;
+}
+async function getCustomCommand(g, name) {
+  const { data, error } = await supabase.from('custom_commands').select('*')
+    .eq('guild_id', g).eq('name', name.toLowerCase()).maybeSingle();
+  if (error) console.error('[db] getCustomCommand:', error.message);
+  return data || null;
+}
+async function listCustomCommands(g) {
+  const { data, error } = await supabase.from('custom_commands').select('*')
+    .eq('guild_id', g).order('name', { ascending: true });
+  if (error) console.error('[db] listCustomCommands:', error.message);
+  return data || [];
+}
+
 module.exports = {
   supabase, defaultSettings, getSettings, saveSettings, updateSettings,
+  addCustomCommand, removeCustomCommand, getCustomCommand, listCustomCommands,
   addWarning, getWarnings, clearWarnings,
   openTicket, closeTicket, findOpenTicket,
   addReactionRole, findReactionRole, listReactionRoles, deleteReactionRole,

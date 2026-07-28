@@ -122,6 +122,18 @@ create table if not exists backups (
 create index if not exists backups_idx on backups (guild_id, created_at desc);
 
 -- ============================================================
+-- Кастомные команды: name -> текст ответа (на сервер).
+-- ============================================================
+create table if not exists custom_commands (
+  guild_id   text   not null,
+  name       text   not null,
+  response   text   not null,
+  created_by text,
+  created_at bigint not null,
+  primary key (guild_id, name)
+);
+
+-- ============================================================
 -- RLS: доступ идёт только через service_role с сервера (бот/дашборд),
 -- который RLS обходит. Поэтому включаем RLS и НЕ создаём публичных политик —
 -- так anon-ключ не сможет читать/писать эти таблицы напрямую.
@@ -136,3 +148,4 @@ alter table whitelist      enable row level security;
 alter table mod_actions    enable row level security;
 alter table action_logs    enable row level security;
 alter table backups        enable row level security;
+alter table custom_commands enable row level security;

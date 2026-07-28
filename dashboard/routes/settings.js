@@ -16,9 +16,10 @@ const arr = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
 // ---- Страница модулей ----
 router.get('/', async (req, res) => {
-  const [reactionRoles, whitelist] = await Promise.all([
+  const [reactionRoles, whitelist, customCommands] = await Promise.all([
     db.listReactionRoles(req.guild.id),
-    db.whitelistList(req.guild.id)
+    db.whitelistList(req.guild.id),
+    db.listCustomCommands(req.guild.id)
   ]);
   res.render('guild', {
     guild: req.guild,
@@ -26,7 +27,8 @@ router.get('/', async (req, res) => {
     saved: req.query.saved,
     botPresent: req.botPresent,
     reactionRoles,
-    whitelist
+    whitelist,
+    customCommands
   });
 });
 
@@ -239,6 +241,20 @@ router.post('/reactionroles', async (req, res) => {
     console.error('[dashboard] reactionroles:', err.message);
     res.status(500).send('Не удалось создать панель ролей: ' + err.message + '. Проверь ID канала и права бота.');
   }
+});
+
+// ---- Кастомные команды ----
+router.post('/customcommands/add', async (req, res) => {
+  const name = (req.body.name || '').trim().toLowerCase();
+  const response = (req.body.response || '').trim();
+  if (name && response && /^[a-zа-я0-9_-]{1,32}$/i.test(name)) {
+    await db.addCustomCommand(req.guild.id, name, response, req.session.user ? req.session.user.id : 'dashboard');
+  }
+  res.redirect(`/dashboard/${req.guild.id}?saved=customcommands#customcommands`);
+});
+router.post('/customcommands/delete', async (req, res) => {
+  if (req.body.name) await db.removeCustomCommand(req.guild.id, req.body.name);
+  res.redirect(`/dashboard/${req.guild.id}?saved=cc_deleted#customcommands`);
 });
 
 // ---- Reaction roles: удалить одну привязку ----

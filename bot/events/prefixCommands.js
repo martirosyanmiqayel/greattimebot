@@ -10,6 +10,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const db = require('../../shared/db');
 const { makePrefixContext } = require('../prefixCommands/_context');
 const xpService = require('../services/xp');
+const { fill } = require('../../shared/text');
 
 module.exports = {
   name: 'messageCreate',
@@ -31,7 +32,19 @@ module.exports = {
     if (!name) return;
 
     const command = client.prefixCommands.get(name);
-    if (!command) return;
+    if (!command) {
+      // Не встроенная команда — может это кастомная команда сервера.
+      const custom = await db.getCustomCommand(message.guild.id, name);
+      if (custom) {
+        const text = fill(custom.response, {
+          user: `<@${message.author.id}>`, mention: `<@${message.author.id}>`,
+          username: message.author.username, server: message.guild.name,
+          count: message.guild.memberCount
+        });
+        message.channel.send({ content: text.slice(0, 2000), allowedMentions: { parse: ['users'] } }).catch(() => {});
+      }
+      return;
+    }
 
     // Проверка прав.
     if (command.permission && message.member && !message.member.permissions.has(command.permission)) {

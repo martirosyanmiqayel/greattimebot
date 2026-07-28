@@ -35,6 +35,7 @@
     <a href="#welcome">👋 Приветствия</a>
     <a href="#autorole">🎭 Автороли</a>
     <a href="#reactionroles">✨ Роли по реакции</a>
+    <a href="#customcommands">🧩 Свои команды</a>
     <a href="#logging">📜 Логи</a>
     <a href="#tickets">🎫 Тикеты</a>
   </aside>
@@ -139,12 +140,15 @@
         </fieldset>
         <fieldset>
           <legend>Роли-награды за уровни (уровень + ID роли)</legend>
-          <% var lr = settings.xp.levelRoles || []; for (var i = 0; i < 5; i++) { var row = lr[i] || {}; %>
-            <div class="grid2">
-              <label>Уровень<input type="number" name="lvl_level" min="1" value="<%= row.level || '' %>" /></label>
-              <label>Роль (ID)<input type="text" name="lvl_role" value="<%= row.roleId || '' %>" /></label>
-            </div>
-          <% } %>
+          <div class="dyn-rows" data-dyn="lvl">
+            <% var lr = settings.xp.levelRoles || []; var lrn = Math.max(lr.length + 1, 3); for (var i = 0; i < lrn; i++) { var row = lr[i] || {}; %>
+              <div class="grid2 dyn-row">
+                <label>Уровень<input type="number" name="lvl_level" min="1" value="<%= row.level || '' %>" /></label>
+                <label>Роль (ID)<input type="text" name="lvl_role" value="<%= row.roleId || '' %>" /></label>
+              </div>
+            <% } %>
+          </div>
+          <button type="button" class="btn ghost small" data-add="lvl">+ ещё роль-награда</button>
         </fieldset>
         <button class="btn" type="submit">Сохранить XP</button>
       </form>
@@ -224,14 +228,15 @@
       <form method="POST" action="/dashboard/<%= guild.id %>/reactionroles">
         <label>Канал для публикации (ID)<input type="text" name="channelId" placeholder="123456789012345678" required /></label>
         <label>Текст сообщения<textarea name="message" rows="2">Выбери себе роль реакцией ниже 👇</textarea></label>
-        <div class="rr-rows">
-          <% for (let i = 0; i < 5; i++) { %>
-            <div class="grid2">
+        <div class="dyn-rows" data-dyn="rr">
+          <% for (let i = 0; i < 3; i++) { %>
+            <div class="grid2 dyn-row">
               <label>Эмодзи<input type="text" name="emoji" placeholder="😄 или name:id" /></label>
               <label>Роль (ID)<input type="text" name="role" placeholder="ID роли" /></label>
             </div>
           <% } %>
         </div>
+        <button type="button" class="btn ghost small" data-add="rr">+ ещё пара</button>
         <small class="muted">Заполни столько пар, сколько нужно. Кастомный эмодзи — в формате <code>name:id</code>.</small>
         <button class="btn" type="submit">Создать панель ролей</button>
       </form>
@@ -257,6 +262,40 @@
           </tbody>
         </table>
       <% } %>
+    </section>
+
+    <!-- КАСТОМНЫЕ КОМАНДЫ -->
+    <section class="module" id="customcommands">
+      <h2>🧩 Свои команды</h2>
+      <p class="muted">Создай команду с любым именем и текстом ответа. Вызов — с префиксом сервера (напр. <code>!правила</code>). В ответе доступны <code>{user}</code> <code>{username}</code> <code>{server}</code> <code>{count}</code>.</p>
+      <form method="POST" action="/dashboard/<%= guild.id %>/customcommands/add">
+        <div class="grid2">
+          <label>Имя команды (без префикса)<input type="text" name="name" placeholder="правила" required /></label>
+          <label>&nbsp;<button class="btn" type="submit">Добавить команду</button></label>
+        </div>
+        <label>Ответ<textarea name="response" rows="2" placeholder="Привет, {user}! Читай правила в #канале." required></textarea></label>
+      </form>
+
+      <% if (customCommands && customCommands.length) { %>
+        <h3>Существующие команды</h3>
+        <table class="rr-table">
+          <thead><tr><th>Команда</th><th>Ответ</th><th></th></tr></thead>
+          <tbody>
+            <% customCommands.forEach(function(cc){ %>
+              <tr>
+                <td><code><%= (settings.prefix || '!') + cc.name %></code></td>
+                <td><%= cc.response.length > 80 ? cc.response.slice(0,80) + '…' : cc.response %></td>
+                <td>
+                  <form method="POST" action="/dashboard/<%= guild.id %>/customcommands/delete">
+                    <input type="hidden" name="name" value="<%= cc.name %>" />
+                    <button class="btn danger small" type="submit">Удалить</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } else { %><p class="muted">Пока нет своих команд.</p><% } %>
     </section>
 
     <!-- ЛОГИ -->
@@ -296,5 +335,20 @@
 
   </div>
 </div>
+
+<script>
+  // Кнопки «+ ещё …»: клонируют последнюю строку в соответствующем контейнере.
+  document.querySelectorAll('[data-add]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var key = btn.getAttribute('data-add');
+      var container = document.querySelector('.dyn-rows[data-dyn="' + key + '"]');
+      if (!container) return;
+      var rows = container.querySelectorAll('.dyn-row');
+      var clone = rows[rows.length - 1].cloneNode(true);
+      clone.querySelectorAll('input, textarea').forEach(function (el) { el.value = ''; });
+      container.appendChild(clone);
+    });
+  });
+</script>
 
 <%- include('partials/foot') %>
