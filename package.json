@@ -10,7 +10,7 @@
     "start": "concurrently -n bot,web -c blue,green \"npm run bot\" \"npm run dashboard\""
   },
   "engines": {
-    "node": ">=18"
+    "node": "22.x"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
