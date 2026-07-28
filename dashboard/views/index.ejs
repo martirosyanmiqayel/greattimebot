@@ -1,81 +1,52 @@
 <%- include('partials/head', { title: 'GreatTime Bot' }) %>
 
-<section class="landing-hero">
-  <div class="hero-copy">
-    <span class="eyebrow">GreatTime • Discord Bot</span>
-    <h1>Выведи свой сервер<br>на <span class="accent">новый уровень</span></h1>
-    <p class="lead">
-      Мощный Discord-бот: Anti-Crash защита, XP и уровни, модерация,
-      бэкапы, логи и тикеты — всё настраивается в веб-панели, без правки кода.
-    </p>
-    <div class="hero-cta">
-      <% if (inviteUrl) { %>
-        <a class="btn big" href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить в Discord</a>
-      <% } else { %>
-        <a class="btn big" href="/login">Войти через Discord</a>
-      <% } %>
-      <a class="btn big ghost" href="/commands">Смотреть команды</a>
-    </div>
-    <div class="hero-stats">
-      <div><b>45+</b><span>команд</span></div>
-      <div><b>/ и !</b><span>оба режима</span></div>
-      <div><b>24/7</b><span>онлайн</span></div>
-    </div>
+<section class="hero">
+  <span class="eyebrow">GreatTime • Discord Bot</span>
+  <h1>Выведи свой сервер<br>на <span class="accent">новый уровень</span></h1>
+  <p class="lead">
+    Мощный Discord-бот: Anti-Crash защита, XP и уровни, модерация,
+    бэкапы, логи и тикеты — всё настраивается в веб-панели, без правки кода.
+  </p>
+  <div class="hero-actions">
+    <% if (inviteUrl) { %>
+      <a class="btn big" href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить в Discord</a>
+    <% } else { %>
+      <a class="btn big" href="/login">Войти через Discord</a>
+    <% } %>
+    <a class="btn big ghost" href="/commands">Смотреть команды</a>
+    <% if (user) { %><a class="btn big ghost" href="/dashboard">Мои серверы →</a><% } %>
   </div>
-
-  <div class="hero-visual">
-    <div class="hero-glow"></div>
-    <svg class="mascot" viewBox="0 0 240 224" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Бот-маскот">
-      <!-- боковые модули -->
-      <circle cx="38" cy="120" r="24" fill="#b93b2f"/>
-      <circle cx="202" cy="120" r="24" fill="#b93b2f"/>
-      <!-- ножки -->
-      <circle cx="86" cy="198" r="15" fill="#b93b2f"/>
-      <circle cx="154" cy="198" r="15" fill="#b93b2f"/>
-      <!-- антенна -->
-      <line x1="120" y1="30" x2="120" y2="12" stroke="#b93b2f" stroke-width="5" stroke-linecap="round"/>
-      <circle cx="120" cy="9" r="7" fill="#d0483a"/>
-      <!-- корпус -->
-      <circle cx="120" cy="112" r="84" fill="#d0483a" stroke="#f6efe9" stroke-width="6"/>
-      <!-- блики на корпусе -->
-      <circle cx="70" cy="66" r="5" fill="#fff" opacity="0.85"/>
-      <circle cx="86" cy="54" r="4" fill="#fff" opacity="0.7"/>
-      <circle cx="102" cy="47" r="3" fill="#fff" opacity="0.55"/>
-      <!-- лицо -->
-      <circle cx="120" cy="112" r="58" fill="#f5efe9"/>
-      <!-- глаза -->
-      <circle cx="100" cy="104" r="12" fill="#3a120c"/>
-      <circle cx="140" cy="104" r="12" fill="#3a120c"/>
-      <circle cx="104" cy="100" r="4" fill="#fff"/>
-      <circle cx="144" cy="100" r="4" fill="#fff"/>
-      <!-- улыбка -->
-      <path d="M102 130 Q120 146 138 130" stroke="#3a120c" stroke-width="6" fill="none" stroke-linecap="round"/>
-    </svg>
+  <div class="hero-stats">
+    <div><b>45+</b><span>команд</span></div>
+    <div><b>/ и !</b><span>оба режима</span></div>
+    <div><b>24/7</b><span>онлайн</span></div>
+    <div><b>0</b><span>сторонних ботов</span></div>
   </div>
 </section>
 
 <section class="section" id="features">
   <div class="section-head">
-    <h2>Всё для сервера в одном боте</h2>
-    <p class="lead">Каждая функция включается и настраивается на дашборде — бот подхватывает изменения сразу.</p>
+    <span class="eyebrow">Возможности</span>
+    <h2>Всё для сервера — в одном боте</h2>
+    <p class="lead">Каждая функция включается и настраивается на дашборде. Бот подхватывает изменения сразу, без перезапуска.</p>
   </div>
   <div class="features">
-    <div class="card"><h3>🛡️ Anti-Crash</h3><p>Защита от рейда персонала: снятие ролей, timeout и авто-откат удалённого через аудит-лог.</p></div>
-    <div class="card"><h3>💾 Backup</h3><p>Авто-снимок структуры сервера и восстановление одной командой.</p></div>
-    <div class="card"><h3>⭐ XP и уровни</h3><p>Опыт за сообщения и голосовые, топ, роли-награды за уровни.</p></div>
-    <div class="card"><h3>🔨 Модерация</h3><p>Временные баны/муты, история наказаний, варны, чистка чата.</p></div>
-    <div class="card"><h3>🤖 Автомод</h3><p>Фильтр слов, ссылок, инвайтов и массовых упоминаний.</p></div>
-    <div class="card"><h3>🎭 Reaction-роли</h3><p>Роли по клику на эмодзи под сообщением.</p></div>
-    <div class="card"><h3>🎫 Тикеты</h3><p>Кнопка поддержки, приватные каналы, закрытие в один клик.</p></div>
-    <div class="card"><h3>📜 Логи</h3><p>Кто/что/когда: каналы, роли, баны, вебхуки + отдельный канал Anti-Crash.</p></div>
-    <div class="card"><h3>🧩 Свои команды</h3><p>Создавай кастомные команды с любым текстом ответа прямо в панели.</p></div>
+    <div class="card"><div class="card-ic">🛡️</div><h3>Anti-Crash</h3><p>Защита от рейда персонала: снятие ролей, timeout и авто-откат удалённого через аудит-лог.</p></div>
+    <div class="card"><div class="card-ic">💾</div><h3>Backup</h3><p>Авто-снимок структуры сервера и восстановление одной командой.</p></div>
+    <div class="card"><div class="card-ic">⭐</div><h3>XP и уровни</h3><p>Опыт за сообщения и голосовые, топ, роли-награды за уровни.</p></div>
+    <div class="card"><div class="card-ic">🔨</div><h3>Модерация</h3><p>Временные баны/муты, история наказаний, варны, чистка чата.</p></div>
+    <div class="card"><div class="card-ic">🤖</div><h3>Автомод</h3><p>Фильтр слов, ссылок, инвайтов и массовых упоминаний.</p></div>
+    <div class="card"><div class="card-ic">🎭</div><h3>Reaction-роли</h3><p>Роли по клику на эмодзи под сообщением.</p></div>
+    <div class="card"><div class="card-ic">🎫</div><h3>Тикеты</h3><p>Кнопка поддержки, приватные каналы, закрытие в один клик.</p></div>
+    <div class="card"><div class="card-ic">📜</div><h3>Логи</h3><p>Кто/что/когда: каналы, роли, баны, вебхуки + отдельный канал Anti-Crash.</p></div>
+    <div class="card"><div class="card-ic">🧩</div><h3>Свои команды</h3><p>Кастомные команды с любым текстом ответа — прямо в панели.</p></div>
   </div>
 </section>
 
 <section class="cta-banner">
   <h2>Готов прокачать сервер?</h2>
   <p class="lead">Добавь бота и настрой всё за пару минут.</p>
-  <div class="hero-cta" style="justify-content:center;">
+  <div class="hero-actions" style="justify-content:center;">
     <% if (inviteUrl) { %><a class="btn big" href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить в Discord</a><% } %>
     <% if (user) { %><a class="btn big ghost" href="/dashboard">Мои серверы →</a><% } else { %><a class="btn big ghost" href="/login">Войти</a><% } %>
   </div>
