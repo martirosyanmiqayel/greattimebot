@@ -23,27 +23,24 @@
 
 <p class="muted hint">
   ID каналов/ролей: включи в Discord «Режим разработчика» (Настройки → Расширенные), затем ПКМ → «Копировать ID».
-  В текстах доступны плейсхолдеры — они подставляются автоматически.
 </p>
 
-<div class="layout">
-  <aside class="sidenav">
-    <a href="#anticrash">🛡️ Anti-Crash</a>
-    <a href="#backup">💾 Backup</a>
-    <a href="#xp">⭐ XP</a>
-    <a href="#moderation">🔨 Модерация</a>
-    <a href="#welcome">👋 Приветствия</a>
-    <a href="#autorole">🎭 Автороли</a>
-    <a href="#reactionroles">✨ Роли по реакции</a>
-    <a href="#customcommands">🧩 Свои команды</a>
-    <a href="#messages">💬 Тексты</a>
-    <a href="#logging">📜 Логи</a>
-    <a href="#tickets">🎫 Тикеты</a>
-  </aside>
+<!-- Вкладки -->
+<div class="tabs" role="tablist">
+  <button class="tab active" data-tab="guard">🛡 Защита</button>
+  <button class="tab" data-tab="levels">⭐ Уровни</button>
+  <button class="tab" data-tab="mod">🔨 Модерация</button>
+  <button class="tab" data-tab="members">👋 Участники</button>
+  <button class="tab" data-tab="roles">✨ Роли и команды</button>
+  <button class="tab" data-tab="logs">📜 Логи</button>
+  <button class="tab" data-tab="tickets">🎫 Тикеты</button>
+</div>
 
-  <div class="content">
+<div class="tab-panels">
 
-    <!-- ANTI-CRASH -->
+  <!-- ================= ЗАЩИТА ================= -->
+  <div class="tab-panel active" data-panel="guard">
+
     <section class="module" id="anticrash">
       <h2>🛡️ Anti-Crash — защита от рейда</h2>
       <p class="muted">Следит за аудит-логом. Если не-whitelist совершает деструктив — снимает роли, выдаёт timeout и откатывает изменение.</p>
@@ -103,7 +100,6 @@
       <% } else { %><p class="muted">Whitelist пуст.</p><% } %>
     </section>
 
-    <!-- BACKUP -->
     <section class="module" id="backup">
       <h2>💾 Backup структуры сервера</h2>
       <p class="muted">Снимок каналов/ролей/прав. Нужен для отката Anti-Crash и ручного восстановления.</p>
@@ -142,11 +138,14 @@
             <% }) %>
           </tbody>
         </table>
-        <small class="muted">Восстановление — в Discord: <code><%= (settings.prefix || '!') %>restore &lt;id&gt;</code> или <code>/backup restore</code> (создаёт каналы/роли, поэтому делается ботом).</small>
+        <small class="muted">Восстановление — в Discord: <code><%= (settings.prefix || '!') %>restore &lt;id&gt;</code> или <code>/backup restore</code>.</small>
       <% } else { %><p class="muted">Копий пока нет. Нажми «Создать backup сейчас» или включи авто-backup.</p><% } %>
     </section>
 
-    <!-- XP -->
+  </div>
+
+  <!-- ================= УРОВНИ ================= -->
+  <div class="tab-panel" data-panel="levels">
     <section class="module" id="xp">
       <h2>⭐ XP и уровни</h2>
       <form method="POST" action="/dashboard/<%= guild.id %>/xp">
@@ -185,8 +184,10 @@
         <button class="btn" type="submit">Сохранить XP</button>
       </form>
     </section>
+  </div>
 
-    <!-- МОДЕРАЦИЯ -->
+  <!-- ================= МОДЕРАЦИЯ ================= -->
+  <div class="tab-panel" data-panel="mod">
     <section class="module" id="moderation">
       <h2>🛡️ Модерация и автомод</h2>
       <form method="POST" action="/dashboard/<%= guild.id %>/moderation">
@@ -196,7 +197,6 @@
           <label>Роль для мьюта (ID, опционально)<input type="text" name="muteRoleId" value="<%= settings.moderation.muteRoleId || '' %>" /></label>
         </div>
         <label class="switch"><input type="checkbox" name="dmOnPunish" <%= settings.moderation.dmOnPunish ? 'checked' : '' %> /> Писать нарушителю в ЛС</label>
-
         <fieldset>
           <legend>Тексты в ЛС (плейсхолдеры: {server} {reason} {moderator} {duration})</legend>
           <label>При бане<input type="text" name="banDm" value="<%= settings.moderation.banDm %>" /></label>
@@ -204,7 +204,6 @@
           <label>При варне<input type="text" name="warnDm" value="<%= settings.moderation.warnDm %>" /></label>
           <label>При мьюте<input type="text" name="muteDm" value="<%= settings.moderation.muteDm %>" /></label>
         </fieldset>
-
         <hr />
         <label class="switch"><input type="checkbox" name="automod_enabled" <%= settings.automod.enabled ? 'checked' : '' %> /> Включить автомодерацию</label>
         <label>Запрещённые слова (по одному на строку)<textarea name="blockedWords" rows="3"><%= (settings.automod.blockedWords || []).join('\n') %></textarea></label>
@@ -227,7 +226,20 @@
       </form>
     </section>
 
-    <!-- ПРИВЕТСТВИЯ -->
+    <section class="module" id="messages">
+      <h2>💬 Тексты ответов бота</h2>
+      <p class="muted">Общие ответы команд можно изменить под себя. Приветствия — вкладка 👋, ЛС при наказаниях — выше, повышение уровня — ⭐ Уровни, тикеты — 🎫.</p>
+      <form method="POST" action="/dashboard/<%= guild.id %>/messages">
+        <label>Недостаточно прав<input type="text" name="noPermission" value="<%= settings.messages.noPermission %>" /></label>
+        <label>Только для админов<input type="text" name="adminOnly" value="<%= settings.messages.adminOnly %>" /></label>
+        <label>Ошибка выполнения команды<input type="text" name="commandError" value="<%= settings.messages.commandError %>" /></label>
+        <button class="btn" type="submit">Сохранить тексты</button>
+      </form>
+    </section>
+  </div>
+
+  <!-- ================= УЧАСТНИКИ ================= -->
+  <div class="tab-panel" data-panel="members">
     <section class="module" id="welcome">
       <h2>👋 Приветствия и прощания</h2>
       <form method="POST" action="/dashboard/<%= guild.id %>/welcome">
@@ -243,7 +255,6 @@
       </form>
     </section>
 
-    <!-- АВТОРОЛИ -->
     <section class="module" id="autorole">
       <h2>🎭 Автороли</h2>
       <form method="POST" action="/dashboard/<%= guild.id %>/autorole">
@@ -252,8 +263,10 @@
         <button class="btn" type="submit">Сохранить автороли</button>
       </form>
     </section>
+  </div>
 
-    <!-- РОЛИ ПО РЕАКЦИИ -->
+  <!-- ================= РОЛИ И КОМАНДЫ ================= -->
+  <div class="tab-panel" data-panel="roles">
     <section class="module" id="reactionroles">
       <h2>✨ Роли по реакции</h2>
       <p class="muted">Бот опубликует сообщение в указанном канале и повесит реакции. Кто нажмёт реакцию — получит роль; уберёт — роль снимется.</p>
@@ -296,7 +309,6 @@
       <% } %>
     </section>
 
-    <!-- КАСТОМНЫЕ КОМАНДЫ -->
     <section class="module" id="customcommands">
       <h2>🧩 Свои команды</h2>
       <p class="muted">Создай команду с любым именем и текстом ответа. Вызов — с префиксом сервера (напр. <code>!правила</code>). В ответе доступны <code>{user}</code> <code>{username}</code> <code>{server}</code> <code>{count}</code>.</p>
@@ -329,20 +341,10 @@
         </table>
       <% } else { %><p class="muted">Пока нет своих команд.</p><% } %>
     </section>
+  </div>
 
-    <!-- ТЕКСТЫ ОТВЕТОВ -->
-    <section class="module" id="messages">
-      <h2>💬 Тексты ответов бота</h2>
-      <p class="muted">Общие ответы команд можно изменить под себя. Другие тексты редактируются в своих разделах: приветствия — 👋, ЛС при наказаниях — 🔨 Модерация, повышение уровня — ⭐ XP, тикеты — 🎫.</p>
-      <form method="POST" action="/dashboard/<%= guild.id %>/messages">
-        <label>Недостаточно прав<input type="text" name="noPermission" value="<%= settings.messages.noPermission %>" /></label>
-        <label>Только для админов<input type="text" name="adminOnly" value="<%= settings.messages.adminOnly %>" /></label>
-        <label>Ошибка выполнения команды<input type="text" name="commandError" value="<%= settings.messages.commandError %>" /></label>
-        <button class="btn" type="submit">Сохранить тексты</button>
-      </form>
-    </section>
-
-    <!-- ЛОГИ -->
+  <!-- ================= ЛОГИ ================= -->
+  <div class="tab-panel" data-panel="logs">
     <section class="module" id="logging">
       <h2>📜 Логирование</h2>
       <form method="POST" action="/dashboard/<%= guild.id %>/logging">
@@ -357,8 +359,10 @@
         <button class="btn" type="submit">Сохранить логи</button>
       </form>
     </section>
+  </div>
 
-    <!-- ТИКЕТЫ -->
+  <!-- ================= ТИКЕТЫ ================= -->
+  <div class="tab-panel" data-panel="tickets">
     <section class="module" id="tickets">
       <h2>🎫 Тикеты</h2>
       <form method="POST" action="/dashboard/<%= guild.id %>/tickets">
@@ -374,18 +378,32 @@
         <label>Сообщение при закрытии<input type="text" name="closeMessage" value="<%= settings.tickets.closeMessage %>" /></label>
         <button class="btn" type="submit">Сохранить тикеты</button>
       </form>
-      <p class="muted">Отправить панель в канал: команда <code>/ticket-panel</code>. Закрыть тикет: кнопка «Закрыть» или команда <code>/close</code>.</p>
+      <p class="muted">Отправить панель в канал: команда <code>/ticket-panel</code>. Закрыть тикет: кнопка «Закрыть» или <code>/close</code>.</p>
     </section>
-
   </div>
+
 </div>
 
 <script>
-  // Кнопки «+ ещё …»: клонируют последнюю строку в соответствующем контейнере.
+  // Вкладки: показываем одну панель за раз.
+  function activateTab(key) {
+    document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === key); });
+    document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-panel') === key); });
+  }
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () { activateTab(t.getAttribute('data-tab')); });
+  });
+  // После сохранения приходит #anchor секции — открываем нужную вкладку.
+  if (location.hash) {
+    var target = document.getElementById(location.hash.slice(1));
+    var panel = target && target.closest('.tab-panel');
+    if (panel) activateTab(panel.getAttribute('data-panel'));
+  }
+
+  // Кнопки «+ ещё …»: клонируют последнюю строку.
   document.querySelectorAll('[data-add]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var key = btn.getAttribute('data-add');
-      var container = document.querySelector('.dyn-rows[data-dyn="' + key + '"]');
+      var container = document.querySelector('.dyn-rows[data-dyn="' + btn.getAttribute('data-add') + '"]');
       if (!container) return;
       var rows = container.querySelectorAll('.dyn-row');
       var clone = rows[rows.length - 1].cloneNode(true);
