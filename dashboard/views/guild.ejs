@@ -12,7 +12,6 @@
   <div class="notice warn">
     ⚠️ Бота <b>GreatTime</b> нет на этом сервере — настройки сохранятся, но применять их некому.
     <% if (inviteUrl) { %><a href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить бота →</a><% } %>
-    <br><small>Если уже добавил — убедись, что процесс бота запущен (<code>npm run bot</code>) и он онлайн.</small>
   </div>
 <% } %>
 
@@ -21,386 +20,415 @@
 <% if (saved === 'rr_error') { %><div class="notice warn">Укажи ID канала и хотя бы одну пару «эмодзи + роль».</div><% } %>
 <% if (saved && !['reactionroles','rr_deleted','rr_error'].includes(saved)) { %><div class="notice success">Сохранено ✓</div><% } %>
 
-<p class="muted hint">
-  ID каналов/ролей: включи в Discord «Режим разработчика» (Настройки → Расширенные), затем ПКМ → «Копировать ID».
-</p>
-
-<!-- Вкладки -->
-<div class="tabs" role="tablist">
-  <button class="tab active" data-tab="guard">🛡 Защита</button>
-  <button class="tab" data-tab="levels">⭐ Уровни</button>
-  <button class="tab" data-tab="mod">🔨 Модерация</button>
-  <button class="tab" data-tab="members">👋 Участники</button>
-  <button class="tab" data-tab="roles">✨ Роли и команды</button>
-  <button class="tab" data-tab="logs">📜 Логи</button>
-  <button class="tab" data-tab="tickets">🎫 Тикеты</button>
-</div>
-
-<div class="tab-panels">
-
-  <!-- ================= ЗАЩИТА ================= -->
-  <div class="tab-panel active" data-panel="guard">
-
-    <section class="module" id="anticrash">
-      <h2>🛡️ Anti-Crash — защита от рейда</h2>
-      <p class="muted">Следит за аудит-логом. Если не-whitelist совершает деструктив — снимает роли, выдаёт timeout и откатывает изменение.</p>
-      <form method="POST" action="/dashboard/<%= guild.id %>/anticrash">
-        <label class="switch"><input type="checkbox" name="anticrash_enabled" <%= settings.anticrash.enabled ? 'checked' : '' %> /> Включить Anti-Crash</label>
-        <div class="grid2">
-          <label>Отдельный канал Anti-Crash (ID)<input type="text" name="ac_logChannelId" value="<%= settings.anticrash.logChannelId || '' %>" /></label>
-          <label>Timeout нарушителю (часов)<input type="number" name="punishTimeoutHours" min="0" max="672" value="<%= settings.anticrash.punishTimeoutHours %>" /></label>
-        </div>
-        <div class="grid2">
-          <label class="switch"><input type="checkbox" name="autoRestore" <%= settings.anticrash.autoRestore ? 'checked' : '' %> /> Откатывать изменения</label>
-          <label class="switch"><input type="checkbox" name="stripRoles" <%= settings.anticrash.stripRoles ? 'checked' : '' %> /> Снимать все роли нарушителю</label>
-        </div>
-        <label>Доверенные роли (ID, по одной на строку)<textarea name="whitelistRoleIds" rows="2"><%= (settings.anticrash.whitelistRoleIds || []).join('\n') %></textarea></label>
-        <fieldset>
-          <legend>Отслеживать действия</legend>
-          <div class="checks">
-            <% [['channelDelete','удаление канала'],['channelUpdate','изменение канала'],['roleDelete','удаление роли'],['roleUpdate','изменение роли'],['guildUpdate','изменение сервера'],['webhookDelete','удаление вебхука'],['webhookUpdate','изменение вебхука'],['memberKick','кик участника'],['botAdd','добавление бота']].forEach(function(p){ %>
-              <label class="switch"><input type="checkbox" name="p_<%= p[0] %>" <%= settings.anticrash.protect[p[0]] ? 'checked' : '' %> /> <%= p[1] %></label>
-            <% }) %>
-          </div>
-        </fieldset>
-        <fieldset>
-          <legend>Лимиты (действий за окно — применяются даже к доверенным)</legend>
-          <% [['channelDelete','Удаление каналов'],['roleDelete','Удаление ролей'],['memberKick','Кики']].forEach(function(p){ var l = settings.anticrash.limits[p[0]] || {count:3,windowSec:30}; %>
-            <div class="grid2">
-              <label><%= p[1] %> — макс. кол-во<input type="number" name="lim_<%= p[0] %>_count" min="1" value="<%= l.count %>" /></label>
-              <label>за окно (сек)<input type="number" name="lim_<%= p[0] %>_window" min="5" value="<%= l.windowSec %>" /></label>
-            </div>
-          <% }) %>
-        </fieldset>
-        <button class="btn" type="submit">Сохранить Anti-Crash</button>
-      </form>
-
-      <h3>✅ Whitelist (доверенные пользователи)</h3>
-      <form method="POST" action="/dashboard/<%= guild.id %>/whitelist/add" class="inline-add">
-        <input type="text" name="userId" placeholder="ID пользователя" />
-        <button class="btn small" type="submit">Добавить</button>
-      </form>
-      <% if (whitelist && whitelist.length) { %>
-        <table class="rr-table">
-          <thead><tr><th>Пользователь</th><th></th></tr></thead>
-          <tbody>
-            <% whitelist.forEach(function(w){ %>
-              <tr>
-                <td><code><%= w.user_id %></code></td>
-                <td>
-                  <form method="POST" action="/dashboard/<%= guild.id %>/whitelist/remove">
-                    <input type="hidden" name="userId" value="<%= w.user_id %>" />
-                    <button class="btn danger small" type="submit">Убрать</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      <% } else { %><p class="muted">Whitelist пуст.</p><% } %>
-    </section>
-
-    <section class="module" id="backup">
-      <h2>💾 Backup структуры сервера</h2>
-      <p class="muted">Снимок каналов/ролей/прав. Нужен для отката Anti-Crash и ручного восстановления.</p>
-      <% if (saved === 'backup_created') { %><div class="notice success">Backup создан ✓</div><% } %>
-      <% if (saved === 'backup_deleted') { %><div class="notice success">Backup удалён ✓</div><% } %>
-      <% if (saved === 'backup_error') { %><div class="notice warn">Не удалось создать backup — проверь, что бот на сервере и у него есть права.</div><% } %>
-      <form method="POST" action="/dashboard/<%= guild.id %>/backup">
-        <label class="switch"><input type="checkbox" name="backup_enabled" <%= settings.backup.enabled ? 'checked' : '' %> /> Включить авто-backup</label>
-        <div class="grid2">
-          <label>Интервал (сек, мин. 30)<input type="number" name="intervalSec" min="30" value="<%= settings.backup.intervalSec %>" /></label>
-          <label>Сколько копий хранить<input type="number" name="keep" min="1" value="<%= settings.backup.keep %>" /></label>
-        </div>
-        <button class="btn" type="submit">Сохранить настройки</button>
-      </form>
-
-      <h3>Копии</h3>
-      <form method="POST" action="/dashboard/<%= guild.id %>/backup/create" style="margin-bottom:12px;">
-        <button class="btn" type="submit">📸 Создать backup сейчас</button>
-      </form>
-      <% if (backups && backups.length) { %>
-        <table class="rr-table">
-          <thead><tr><th>ID</th><th>Тип</th><th>Создан</th><th></th></tr></thead>
-          <tbody>
-            <% backups.forEach(function(bk){ %>
-              <tr>
-                <td><code>#<%= bk.id %></code></td>
-                <td><%= bk.kind %></td>
-                <td><%= new Date(Number(bk.created_at)).toLocaleString('ru-RU') %></td>
-                <td>
-                  <form method="POST" action="/dashboard/<%= guild.id %>/backup/delete">
-                    <input type="hidden" name="id" value="<%= bk.id %>" />
-                    <button class="btn danger small" type="submit">Удалить</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-        <small class="muted">Восстановление — в Discord: <code><%= (settings.prefix || '!') %>restore &lt;id&gt;</code> или <code>/backup restore</code>.</small>
-      <% } else { %><p class="muted">Копий пока нет. Нажми «Создать backup сейчас» или включи авто-backup.</p><% } %>
-    </section>
-
-  </div>
-
-  <!-- ================= УРОВНИ ================= -->
-  <div class="tab-panel" data-panel="levels">
-    <section class="module" id="xp">
-      <h2>⭐ XP и уровни</h2>
-      <form method="POST" action="/dashboard/<%= guild.id %>/xp">
-        <label class="switch"><input type="checkbox" name="xp_enabled" <%= settings.xp.enabled ? 'checked' : '' %> /> Включить XP-систему</label>
-        <div class="grid2">
-          <label>XP за сообщение<input type="number" name="perMessage" min="0" value="<%= settings.xp.perMessage %>" /></label>
-          <label>Кулдаун сообщений (сек)<input type="number" name="messageCooldownSec" min="0" value="<%= settings.xp.messageCooldownSec %>" /></label>
-        </div>
-        <div class="grid2">
-          <label>XP за минуту в голосовом<input type="number" name="perVoiceMinute" min="0" value="<%= settings.xp.perVoiceMinute %>" /></label>
-          <label>Канал уведомлений об уровне (ID, опц.)<input type="text" name="levelUpChannelId" value="<%= settings.xp.levelUpChannelId || '' %>" /></label>
-        </div>
-        <label class="switch"><input type="checkbox" name="announceLevelUp" <%= settings.xp.announceLevelUp ? 'checked' : '' %> /> Объявлять о повышении уровня</label>
-        <label>Текст повышения уровня<input type="text" name="levelUpMessage" value="<%= settings.xp.levelUpMessage %>" /><small>Плейсхолдеры: {user} {username} {level}</small></label>
-        <fieldset>
-          <legend>Формула уровня: level = (xp / base)^(1/exponent)</legend>
-          <div class="grid2">
-            <label>base<input type="number" name="levelBaseXp" min="1" value="<%= settings.xp.levelBaseXp %>" /></label>
-            <label>exponent<input type="number" name="levelExponent" step="0.1" min="1" value="<%= settings.xp.levelExponent %>" /></label>
-          </div>
-        </fieldset>
-        <fieldset>
-          <legend>Роли за уровни: на каком уровне какую роль выдать и какую снять (ID)</legend>
-          <div class="dyn-rows" data-dyn="lvl">
-            <% var lr = settings.xp.levelRoles || []; var lrn = Math.max(lr.length + 1, 3); for (var i = 0; i < lrn; i++) { var row = lr[i] || {}; %>
-              <div class="grid3 dyn-row">
-                <label>Уровень<input type="number" name="lvl_level" min="1" value="<%= row.level || '' %>" /></label>
-                <label>Выдать роль (ID)<input type="text" name="lvl_role" value="<%= row.roleId || '' %>" /></label>
-                <label>Снять роль (ID)<input type="text" name="lvl_remove" value="<%= row.removeRoleId || '' %>" /></label>
-              </div>
-            <% } %>
-          </div>
-          <button type="button" class="btn ghost small" data-add="lvl">+ ещё уровень</button>
-          <small class="muted">«Снять роль» удобно, чтобы убирать роль прошлого уровня. Любое поле роли можно оставить пустым.</small>
-        </fieldset>
-        <button class="btn" type="submit">Сохранить XP</button>
-      </form>
-    </section>
-  </div>
-
-  <!-- ================= МОДЕРАЦИЯ ================= -->
-  <div class="tab-panel" data-panel="mod">
-    <section class="module" id="moderation">
-      <h2>🛡️ Модерация и автомод</h2>
-      <form method="POST" action="/dashboard/<%= guild.id %>/moderation">
-        <label class="switch"><input type="checkbox" name="mod_enabled" <%= settings.moderation.enabled ? 'checked' : '' %> /> Включить модерацию</label>
-        <div class="grid2">
-          <label>Канал логов модерации (ID)<input type="text" name="logChannelId" value="<%= settings.moderation.logChannelId || '' %>" /></label>
-          <label>Роль для мьюта (ID, опционально)<input type="text" name="muteRoleId" value="<%= settings.moderation.muteRoleId || '' %>" /></label>
-        </div>
-        <label class="switch"><input type="checkbox" name="dmOnPunish" <%= settings.moderation.dmOnPunish ? 'checked' : '' %> /> Писать нарушителю в ЛС</label>
-        <fieldset>
-          <legend>Тексты в ЛС (плейсхолдеры: {server} {reason} {moderator} {duration})</legend>
-          <label>При бане<input type="text" name="banDm" value="<%= settings.moderation.banDm %>" /></label>
-          <label>При кике<input type="text" name="kickDm" value="<%= settings.moderation.kickDm %>" /></label>
-          <label>При варне<input type="text" name="warnDm" value="<%= settings.moderation.warnDm %>" /></label>
-          <label>При мьюте<input type="text" name="muteDm" value="<%= settings.moderation.muteDm %>" /></label>
-        </fieldset>
-        <hr />
-        <label class="switch"><input type="checkbox" name="automod_enabled" <%= settings.automod.enabled ? 'checked' : '' %> /> Включить автомодерацию</label>
-        <label>Запрещённые слова (по одному на строку)<textarea name="blockedWords" rows="3"><%= (settings.automod.blockedWords || []).join('\n') %></textarea></label>
-        <div class="grid2">
-          <label class="switch"><input type="checkbox" name="blockInvites" <%= settings.automod.blockInvites ? 'checked' : '' %> /> Блокировать приглашения</label>
-          <label class="switch"><input type="checkbox" name="blockLinks" <%= settings.automod.blockLinks ? 'checked' : '' %> /> Блокировать ссылки</label>
-        </div>
-        <div class="grid2">
-          <label>Макс. упоминаний (0 = выкл)<input type="number" name="maxMentions" min="0" value="<%= settings.automod.maxMentions %>" /></label>
-          <label>Наказание
-            <select name="punishment">
-              <% ['delete','warn','mute','kick'].forEach(function(p){ %>
-                <option value="<%= p %>" <%= settings.automod.punishment === p ? 'selected' : '' %>><%= p %></option>
-              <% }) %>
-            </select>
-          </label>
-        </div>
-        <label>Уведомление в канал (плейсхолдеры: {user} {reason})<input type="text" name="noticeMessage" value="<%= settings.automod.noticeMessage %>" /></label>
-        <button class="btn" type="submit">Сохранить модерацию</button>
-      </form>
-    </section>
-
-    <section class="module" id="messages">
-      <h2>💬 Тексты ответов бота</h2>
-      <p class="muted">Общие ответы команд можно изменить под себя. Приветствия — вкладка 👋, ЛС при наказаниях — выше, повышение уровня — ⭐ Уровни, тикеты — 🎫.</p>
-      <form method="POST" action="/dashboard/<%= guild.id %>/messages">
-        <label>Недостаточно прав<input type="text" name="noPermission" value="<%= settings.messages.noPermission %>" /></label>
-        <label>Только для админов<input type="text" name="adminOnly" value="<%= settings.messages.adminOnly %>" /></label>
-        <label>Ошибка выполнения команды<input type="text" name="commandError" value="<%= settings.messages.commandError %>" /></label>
-        <button class="btn" type="submit">Сохранить тексты</button>
-      </form>
-    </section>
-  </div>
-
-  <!-- ================= УЧАСТНИКИ ================= -->
-  <div class="tab-panel" data-panel="members">
-    <section class="module" id="welcome">
-      <h2>👋 Приветствия и прощания</h2>
-      <form method="POST" action="/dashboard/<%= guild.id %>/welcome">
-        <label class="switch"><input type="checkbox" name="welcome_enabled" <%= settings.welcome.enabled ? 'checked' : '' %> /> Включить приветствия</label>
-        <label>Канал приветствий (ID)<input type="text" name="welcomeChannelId" value="<%= settings.welcome.channelId || '' %>" /></label>
-        <label>Текст приветствия<textarea name="welcomeMessage" rows="2"><%= settings.welcome.message %></textarea><small>Плейсхолдеры: {user} {username} {server} {count}</small></label>
-        <label>Приветствие в ЛС (опционально)<textarea name="dmMessage" rows="2"><%= settings.welcome.dmMessage || '' %></textarea></label>
-        <hr />
-        <label class="switch"><input type="checkbox" name="goodbye_enabled" <%= settings.goodbye.enabled ? 'checked' : '' %> /> Включить прощания</label>
-        <label>Канал прощаний (ID)<input type="text" name="goodbyeChannelId" value="<%= settings.goodbye.channelId || '' %>" /></label>
-        <label>Текст прощания<textarea name="goodbyeMessage" rows="2"><%= settings.goodbye.message %></textarea></label>
-        <button class="btn" type="submit">Сохранить приветствия</button>
-      </form>
-    </section>
-
-    <section class="module" id="autorole">
-      <h2>🎭 Автороли</h2>
-      <form method="POST" action="/dashboard/<%= guild.id %>/autorole">
-        <label class="switch"><input type="checkbox" name="autorole_enabled" <%= settings.autorole.enabled ? 'checked' : '' %> /> Выдавать роли новичкам автоматически</label>
-        <label>ID ролей (по одному на строку)<textarea name="roleIds" rows="3"><%= (settings.autorole.roleIds || []).join('\n') %></textarea></label>
-        <button class="btn" type="submit">Сохранить автороли</button>
-      </form>
-    </section>
-  </div>
-
-  <!-- ================= РОЛИ И КОМАНДЫ ================= -->
-  <div class="tab-panel" data-panel="roles">
-    <section class="module" id="reactionroles">
-      <h2>✨ Роли по реакции</h2>
-      <p class="muted">Бот опубликует сообщение в указанном канале и повесит реакции. Кто нажмёт реакцию — получит роль; уберёт — роль снимется.</p>
-      <form method="POST" action="/dashboard/<%= guild.id %>/reactionroles">
-        <label>Канал для публикации (ID)<input type="text" name="channelId" placeholder="123456789012345678" required /></label>
-        <label>Текст сообщения<textarea name="message" rows="2">Выбери себе роль реакцией ниже 👇</textarea></label>
-        <div class="dyn-rows" data-dyn="rr">
-          <% for (let i = 0; i < 3; i++) { %>
-            <div class="grid2 dyn-row">
-              <label>Эмодзи<input type="text" name="emoji" placeholder="😄 или name:id" /></label>
-              <label>Роль (ID)<input type="text" name="role" placeholder="ID роли" /></label>
-            </div>
-          <% } %>
-        </div>
-        <button type="button" class="btn ghost small" data-add="rr">+ ещё пара</button>
-        <small class="muted">Заполни столько пар, сколько нужно. Кастомный эмодзи — в формате <code>name:id</code>.</small>
-        <button class="btn" type="submit">Создать панель ролей</button>
-      </form>
-
-      <% if (reactionRoles && reactionRoles.length) { %>
-        <h3>Активные привязки</h3>
-        <table class="rr-table">
-          <thead><tr><th>Эмодзи</th><th>Роль</th><th>Сообщение</th><th></th></tr></thead>
-          <tbody>
-            <% reactionRoles.forEach(function(rr){ %>
-              <tr>
-                <td><%= rr.emoji %></td>
-                <td><code>роль <%= rr.role_id %></code></td>
-                <td><code><%= rr.message_id %></code></td>
-                <td>
-                  <form method="POST" action="/dashboard/<%= guild.id %>/reactionroles/delete">
-                    <input type="hidden" name="id" value="<%= rr.id %>" />
-                    <button class="btn danger small" type="submit">Удалить</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
+<div class="dash">
+  <!-- Боковая навигация -->
+  <aside class="dash-side">
+    <div class="side-head">
+      <% if (guild.icon) { %>
+        <img src="https://cdn.discordapp.com/icons/<%= guild.id %>/<%= guild.icon %>.png?size=64" alt="" />
+      <% } else { %>
+        <div class="side-ic"><%= (guild.name || '?').charAt(0).toUpperCase() %></div>
       <% } %>
-    </section>
+      <div><strong><%= guild.name %></strong><span>Настройки бота</span></div>
+    </div>
+    <nav class="dash-nav">
+      <% [
+        ['anticrash','🛡️','Anti-Crash'], ['backup','💾','Backup'], ['xp','⭐','XP и уровни'],
+        ['moderation','🔨','Модерация'], ['welcome','👋','Приветствия'], ['autorole','🎭','Автороли'],
+        ['reactionroles','✨','Reaction-роли'], ['customcommands','🧩','Свои команды'], ['messages','💬','Тексты'],
+        ['logging','📜','Логи'], ['tickets','🎫','Тикеты']
+      ].forEach(function(it, i){ %>
+        <button class="side-item <%= i === 0 ? 'active' : '' %>" data-nav="<%= it[0] %>"><span class="ic"><%= it[1] %></span> <%= it[2] %></button>
+      <% }) %>
+    </nav>
+  </aside>
 
-    <section class="module" id="customcommands">
-      <h2>🧩 Свои команды</h2>
-      <p class="muted">Создай команду с любым именем и текстом ответа. Вызов — с префиксом сервера (напр. <code>!правила</code>). В ответе доступны <code>{user}</code> <code>{username}</code> <code>{server}</code> <code>{count}</code>.</p>
-      <form method="POST" action="/dashboard/<%= guild.id %>/customcommands/add">
-        <div class="grid2">
-          <label>Имя команды (без префикса)<input type="text" name="name" placeholder="правила" required /></label>
-          <label>&nbsp;<button class="btn" type="submit">Добавить команду</button></label>
-        </div>
-        <label>Ответ<textarea name="response" rows="2" placeholder="Привет, {user}! Читай правила в #канале." required></textarea></label>
-      </form>
+  <!-- Контент -->
+  <div class="dash-main">
+    <div class="overview">
+      <% [
+        ['🛡️','Anti-Crash', settings.anticrash.enabled], ['💾','Backup', settings.backup.enabled],
+        ['⭐','XP', settings.xp.enabled], ['🔨','Модерация', settings.moderation.enabled],
+        ['🤖','Автомод', settings.automod.enabled], ['👋','Приветствия', settings.welcome.enabled],
+        ['📜','Логи', settings.logging.enabled], ['🎫','Тикеты', settings.tickets.enabled]
+      ].forEach(function(m){ %>
+        <span class="chip <%= m[2] ? 'on' : 'off' %>"><i></i><%= m[0] %> <%= m[1] %></span>
+      <% }) %>
+    </div>
 
-      <% if (customCommands && customCommands.length) { %>
-        <h3>Существующие команды</h3>
-        <table class="rr-table">
-          <thead><tr><th>Команда</th><th>Ответ</th><th></th></tr></thead>
-          <tbody>
-            <% customCommands.forEach(function(cc){ %>
-              <tr>
-                <td><code><%= (settings.prefix || '!') + cc.name %></code></td>
-                <td><%= cc.response.length > 80 ? cc.response.slice(0,80) + '…' : cc.response %></td>
-                <td>
-                  <form method="POST" action="/dashboard/<%= guild.id %>/customcommands/delete">
-                    <input type="hidden" name="name" value="<%= cc.name %>" />
-                    <button class="btn danger small" type="submit">Удалить</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      <% } else { %><p class="muted">Пока нет своих команд.</p><% } %>
-    </section>
+    <p class="muted hint" style="margin-bottom:18px;">ID каналов/ролей: включи в Discord «Режим разработчика» (Настройки → Расширенные), затем ПКМ → «Копировать ID».</p>
+
+    <div class="dash-panels">
+
+      <!-- ANTI-CRASH -->
+      <div class="dash-panel active" data-panel="anticrash">
+        <section class="module" id="anticrash">
+          <h2>🛡️ Anti-Crash — защита от рейда</h2>
+          <p class="muted">Следит за аудит-логом. Если не-whitelist совершает деструктив — снимает роли, выдаёт timeout и откатывает изменение.</p>
+          <form method="POST" action="/dashboard/<%= guild.id %>/anticrash">
+            <label class="switch"><input type="checkbox" name="anticrash_enabled" <%= settings.anticrash.enabled ? 'checked' : '' %> /> Включить Anti-Crash</label>
+            <div class="grid2">
+              <label>Отдельный канал Anti-Crash (ID)<input type="text" name="ac_logChannelId" value="<%= settings.anticrash.logChannelId || '' %>" /></label>
+              <label>Timeout нарушителю (часов)<input type="number" name="punishTimeoutHours" min="0" max="672" value="<%= settings.anticrash.punishTimeoutHours %>" /></label>
+            </div>
+            <div class="grid2">
+              <label class="switch"><input type="checkbox" name="autoRestore" <%= settings.anticrash.autoRestore ? 'checked' : '' %> /> Откатывать изменения</label>
+              <label class="switch"><input type="checkbox" name="stripRoles" <%= settings.anticrash.stripRoles ? 'checked' : '' %> /> Снимать все роли нарушителю</label>
+            </div>
+            <label>Доверенные роли (ID, по одной на строку)<textarea name="whitelistRoleIds" rows="2"><%= (settings.anticrash.whitelistRoleIds || []).join('\n') %></textarea></label>
+            <fieldset>
+              <legend>Отслеживать действия</legend>
+              <div class="checks">
+                <% [['channelDelete','удаление канала'],['channelUpdate','изменение канала'],['roleDelete','удаление роли'],['roleUpdate','изменение роли'],['guildUpdate','изменение сервера'],['webhookDelete','удаление вебхука'],['webhookUpdate','изменение вебхука'],['memberKick','кик участника'],['botAdd','добавление бота']].forEach(function(p){ %>
+                  <label class="switch"><input type="checkbox" name="p_<%= p[0] %>" <%= settings.anticrash.protect[p[0]] ? 'checked' : '' %> /> <%= p[1] %></label>
+                <% }) %>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Лимиты (действий за окно — применяются даже к доверенным)</legend>
+              <% [['channelDelete','Удаление каналов'],['roleDelete','Удаление ролей'],['memberKick','Кики']].forEach(function(p){ var l = settings.anticrash.limits[p[0]] || {count:3,windowSec:30}; %>
+                <div class="grid2">
+                  <label><%= p[1] %> — макс. кол-во<input type="number" name="lim_<%= p[0] %>_count" min="1" value="<%= l.count %>" /></label>
+                  <label>за окно (сек)<input type="number" name="lim_<%= p[0] %>_window" min="5" value="<%= l.windowSec %>" /></label>
+                </div>
+              <% }) %>
+            </fieldset>
+            <button class="btn" type="submit">Сохранить Anti-Crash</button>
+          </form>
+
+          <h3>✅ Whitelist (доверенные пользователи)</h3>
+          <form method="POST" action="/dashboard/<%= guild.id %>/whitelist/add" class="inline-add">
+            <input type="text" name="userId" placeholder="ID пользователя" />
+            <button class="btn small" type="submit">Добавить</button>
+          </form>
+          <% if (whitelist && whitelist.length) { %>
+            <table class="rr-table">
+              <thead><tr><th>Пользователь</th><th></th></tr></thead>
+              <tbody>
+                <% whitelist.forEach(function(w){ %>
+                  <tr>
+                    <td><code><%= w.user_id %></code></td>
+                    <td>
+                      <form method="POST" action="/dashboard/<%= guild.id %>/whitelist/remove">
+                        <input type="hidden" name="userId" value="<%= w.user_id %>" />
+                        <button class="btn danger small" type="submit">Убрать</button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } else { %><p class="muted">Whitelist пуст.</p><% } %>
+        </section>
+      </div>
+
+      <!-- BACKUP -->
+      <div class="dash-panel" data-panel="backup">
+        <section class="module" id="backup">
+          <h2>💾 Backup структуры сервера</h2>
+          <p class="muted">Снимок каналов/ролей/прав. Нужен для отката Anti-Crash и ручного восстановления.</p>
+          <% if (saved === 'backup_created') { %><div class="notice success">Backup создан ✓</div><% } %>
+          <% if (saved === 'backup_deleted') { %><div class="notice success">Backup удалён ✓</div><% } %>
+          <% if (saved === 'backup_error') { %><div class="notice warn">Не удалось создать backup — проверь, что бот на сервере и у него есть права.</div><% } %>
+          <form method="POST" action="/dashboard/<%= guild.id %>/backup">
+            <label class="switch"><input type="checkbox" name="backup_enabled" <%= settings.backup.enabled ? 'checked' : '' %> /> Включить авто-backup</label>
+            <div class="grid2">
+              <label>Интервал (сек, мин. 30)<input type="number" name="intervalSec" min="30" value="<%= settings.backup.intervalSec %>" /></label>
+              <label>Сколько копий хранить<input type="number" name="keep" min="1" value="<%= settings.backup.keep %>" /></label>
+            </div>
+            <button class="btn" type="submit">Сохранить настройки</button>
+          </form>
+          <h3>Копии</h3>
+          <form method="POST" action="/dashboard/<%= guild.id %>/backup/create" style="margin-bottom:12px;">
+            <button class="btn" type="submit">📸 Создать backup сейчас</button>
+          </form>
+          <% if (backups && backups.length) { %>
+            <table class="rr-table">
+              <thead><tr><th>ID</th><th>Тип</th><th>Создан</th><th></th></tr></thead>
+              <tbody>
+                <% backups.forEach(function(bk){ %>
+                  <tr>
+                    <td><code>#<%= bk.id %></code></td>
+                    <td><%= bk.kind %></td>
+                    <td><%= new Date(Number(bk.created_at)).toLocaleString('ru-RU') %></td>
+                    <td>
+                      <form method="POST" action="/dashboard/<%= guild.id %>/backup/delete">
+                        <input type="hidden" name="id" value="<%= bk.id %>" />
+                        <button class="btn danger small" type="submit">Удалить</button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+            <small class="muted">Восстановление — в Discord: <code><%= (settings.prefix || '!') %>restore &lt;id&gt;</code> или <code>/backup restore</code>.</small>
+          <% } else { %><p class="muted">Копий пока нет. Нажми «Создать backup сейчас» или включи авто-backup.</p><% } %>
+        </section>
+      </div>
+
+      <!-- XP -->
+      <div class="dash-panel" data-panel="xp">
+        <section class="module" id="xp">
+          <h2>⭐ XP и уровни</h2>
+          <form method="POST" action="/dashboard/<%= guild.id %>/xp">
+            <label class="switch"><input type="checkbox" name="xp_enabled" <%= settings.xp.enabled ? 'checked' : '' %> /> Включить XP-систему</label>
+            <div class="grid2">
+              <label>XP за сообщение<input type="number" name="perMessage" min="0" value="<%= settings.xp.perMessage %>" /></label>
+              <label>Кулдаун сообщений (сек)<input type="number" name="messageCooldownSec" min="0" value="<%= settings.xp.messageCooldownSec %>" /></label>
+            </div>
+            <div class="grid2">
+              <label>XP за минуту в голосовом<input type="number" name="perVoiceMinute" min="0" value="<%= settings.xp.perVoiceMinute %>" /></label>
+              <label>Канал уведомлений об уровне (ID, опц.)<input type="text" name="levelUpChannelId" value="<%= settings.xp.levelUpChannelId || '' %>" /></label>
+            </div>
+            <label class="switch"><input type="checkbox" name="announceLevelUp" <%= settings.xp.announceLevelUp ? 'checked' : '' %> /> Объявлять о повышении уровня</label>
+            <label>Текст повышения уровня<input type="text" name="levelUpMessage" value="<%= settings.xp.levelUpMessage %>" /><small>Плейсхолдеры: {user} {username} {level}</small></label>
+            <fieldset>
+              <legend>Формула уровня: level = (xp / base)^(1/exponent)</legend>
+              <div class="grid2">
+                <label>base<input type="number" name="levelBaseXp" min="1" value="<%= settings.xp.levelBaseXp %>" /></label>
+                <label>exponent<input type="number" name="levelExponent" step="0.1" min="1" value="<%= settings.xp.levelExponent %>" /></label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Роли за уровни: на каком уровне какую роль выдать и какую снять (ID)</legend>
+              <div class="dyn-rows" data-dyn="lvl">
+                <% var lr = settings.xp.levelRoles || []; var lrn = Math.max(lr.length + 1, 3); for (var i = 0; i < lrn; i++) { var row = lr[i] || {}; %>
+                  <div class="grid3 dyn-row">
+                    <label>Уровень<input type="number" name="lvl_level" min="1" value="<%= row.level || '' %>" /></label>
+                    <label>Выдать роль (ID)<input type="text" name="lvl_role" value="<%= row.roleId || '' %>" /></label>
+                    <label>Снять роль (ID)<input type="text" name="lvl_remove" value="<%= row.removeRoleId || '' %>" /></label>
+                  </div>
+                <% } %>
+              </div>
+              <button type="button" class="btn ghost small" data-add="lvl">+ ещё уровень</button>
+              <small class="muted">«Снять роль» удобно, чтобы убирать роль прошлого уровня. Любое поле роли можно оставить пустым.</small>
+            </fieldset>
+            <button class="btn" type="submit">Сохранить XP</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- МОДЕРАЦИЯ -->
+      <div class="dash-panel" data-panel="moderation">
+        <section class="module" id="moderation">
+          <h2>🔨 Модерация и автомод</h2>
+          <form method="POST" action="/dashboard/<%= guild.id %>/moderation">
+            <label class="switch"><input type="checkbox" name="mod_enabled" <%= settings.moderation.enabled ? 'checked' : '' %> /> Включить модерацию</label>
+            <div class="grid2">
+              <label>Канал логов модерации (ID)<input type="text" name="logChannelId" value="<%= settings.moderation.logChannelId || '' %>" /></label>
+              <label>Роль для мьюта (ID, опционально)<input type="text" name="muteRoleId" value="<%= settings.moderation.muteRoleId || '' %>" /></label>
+            </div>
+            <label class="switch"><input type="checkbox" name="dmOnPunish" <%= settings.moderation.dmOnPunish ? 'checked' : '' %> /> Писать нарушителю в ЛС</label>
+            <fieldset>
+              <legend>Тексты в ЛС (плейсхолдеры: {server} {reason} {moderator} {duration})</legend>
+              <label>При бане<input type="text" name="banDm" value="<%= settings.moderation.banDm %>" /></label>
+              <label>При кике<input type="text" name="kickDm" value="<%= settings.moderation.kickDm %>" /></label>
+              <label>При варне<input type="text" name="warnDm" value="<%= settings.moderation.warnDm %>" /></label>
+              <label>При мьюте<input type="text" name="muteDm" value="<%= settings.moderation.muteDm %>" /></label>
+            </fieldset>
+            <hr />
+            <label class="switch"><input type="checkbox" name="automod_enabled" <%= settings.automod.enabled ? 'checked' : '' %> /> Включить автомодерацию</label>
+            <label>Запрещённые слова (по одному на строку)<textarea name="blockedWords" rows="3"><%= (settings.automod.blockedWords || []).join('\n') %></textarea></label>
+            <div class="grid2">
+              <label class="switch"><input type="checkbox" name="blockInvites" <%= settings.automod.blockInvites ? 'checked' : '' %> /> Блокировать приглашения</label>
+              <label class="switch"><input type="checkbox" name="blockLinks" <%= settings.automod.blockLinks ? 'checked' : '' %> /> Блокировать ссылки</label>
+            </div>
+            <div class="grid2">
+              <label>Макс. упоминаний (0 = выкл)<input type="number" name="maxMentions" min="0" value="<%= settings.automod.maxMentions %>" /></label>
+              <label>Наказание
+                <select name="punishment">
+                  <% ['delete','warn','mute','kick'].forEach(function(p){ %>
+                    <option value="<%= p %>" <%= settings.automod.punishment === p ? 'selected' : '' %>><%= p %></option>
+                  <% }) %>
+                </select>
+              </label>
+            </div>
+            <label>Уведомление в канал (плейсхолдеры: {user} {reason})<input type="text" name="noticeMessage" value="<%= settings.automod.noticeMessage %>" /></label>
+            <button class="btn" type="submit">Сохранить модерацию</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- ПРИВЕТСТВИЯ -->
+      <div class="dash-panel" data-panel="welcome">
+        <section class="module" id="welcome">
+          <h2>👋 Приветствия и прощания</h2>
+          <form method="POST" action="/dashboard/<%= guild.id %>/welcome">
+            <label class="switch"><input type="checkbox" name="welcome_enabled" <%= settings.welcome.enabled ? 'checked' : '' %> /> Включить приветствия</label>
+            <label>Канал приветствий (ID)<input type="text" name="welcomeChannelId" value="<%= settings.welcome.channelId || '' %>" /></label>
+            <label>Текст приветствия<textarea name="welcomeMessage" rows="2"><%= settings.welcome.message %></textarea><small>Плейсхолдеры: {user} {username} {server} {count}</small></label>
+            <label>Приветствие в ЛС (опционально)<textarea name="dmMessage" rows="2"><%= settings.welcome.dmMessage || '' %></textarea></label>
+            <hr />
+            <label class="switch"><input type="checkbox" name="goodbye_enabled" <%= settings.goodbye.enabled ? 'checked' : '' %> /> Включить прощания</label>
+            <label>Канал прощаний (ID)<input type="text" name="goodbyeChannelId" value="<%= settings.goodbye.channelId || '' %>" /></label>
+            <label>Текст прощания<textarea name="goodbyeMessage" rows="2"><%= settings.goodbye.message %></textarea></label>
+            <button class="btn" type="submit">Сохранить приветствия</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- АВТОРОЛИ -->
+      <div class="dash-panel" data-panel="autorole">
+        <section class="module" id="autorole">
+          <h2>🎭 Автороли</h2>
+          <form method="POST" action="/dashboard/<%= guild.id %>/autorole">
+            <label class="switch"><input type="checkbox" name="autorole_enabled" <%= settings.autorole.enabled ? 'checked' : '' %> /> Выдавать роли новичкам автоматически</label>
+            <label>ID ролей (по одному на строку)<textarea name="roleIds" rows="3"><%= (settings.autorole.roleIds || []).join('\n') %></textarea></label>
+            <button class="btn" type="submit">Сохранить автороли</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- РЕАКЦИЯ-РОЛИ -->
+      <div class="dash-panel" data-panel="reactionroles">
+        <section class="module" id="reactionroles">
+          <h2>✨ Роли по реакции</h2>
+          <p class="muted">Бот опубликует сообщение в указанном канале и повесит реакции. Кто нажмёт реакцию — получит роль; уберёт — роль снимется.</p>
+          <form method="POST" action="/dashboard/<%= guild.id %>/reactionroles">
+            <label>Канал для публикации (ID)<input type="text" name="channelId" placeholder="123456789012345678" required /></label>
+            <label>Текст сообщения<textarea name="message" rows="2">Выбери себе роль реакцией ниже 👇</textarea></label>
+            <div class="dyn-rows" data-dyn="rr">
+              <% for (let i = 0; i < 3; i++) { %>
+                <div class="grid2 dyn-row">
+                  <label>Эмодзи<input type="text" name="emoji" placeholder="😄 или name:id" /></label>
+                  <label>Роль (ID)<input type="text" name="role" placeholder="ID роли" /></label>
+                </div>
+              <% } %>
+            </div>
+            <button type="button" class="btn ghost small" data-add="rr">+ ещё пара</button>
+            <small class="muted">Заполни столько пар, сколько нужно. Кастомный эмодзи — в формате <code>name:id</code>.</small>
+            <button class="btn" type="submit">Создать панель ролей</button>
+          </form>
+          <% if (reactionRoles && reactionRoles.length) { %>
+            <h3>Активные привязки</h3>
+            <table class="rr-table">
+              <thead><tr><th>Эмодзи</th><th>Роль</th><th>Сообщение</th><th></th></tr></thead>
+              <tbody>
+                <% reactionRoles.forEach(function(rr){ %>
+                  <tr>
+                    <td><%= rr.emoji %></td>
+                    <td><code>роль <%= rr.role_id %></code></td>
+                    <td><code><%= rr.message_id %></code></td>
+                    <td>
+                      <form method="POST" action="/dashboard/<%= guild.id %>/reactionroles/delete">
+                        <input type="hidden" name="id" value="<%= rr.id %>" />
+                        <button class="btn danger small" type="submit">Удалить</button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } %>
+        </section>
+      </div>
+
+      <!-- СВОИ КОМАНДЫ -->
+      <div class="dash-panel" data-panel="customcommands">
+        <section class="module" id="customcommands">
+          <h2>🧩 Свои команды</h2>
+          <p class="muted">Создай команду с любым именем и текстом ответа. Вызов — с префиксом сервера (напр. <code>!правила</code>). В ответе доступны <code>{user}</code> <code>{username}</code> <code>{server}</code> <code>{count}</code>.</p>
+          <form method="POST" action="/dashboard/<%= guild.id %>/customcommands/add">
+            <div class="grid2">
+              <label>Имя команды (без префикса)<input type="text" name="name" placeholder="правила" required /></label>
+              <label>&nbsp;<button class="btn" type="submit">Добавить команду</button></label>
+            </div>
+            <label>Ответ<textarea name="response" rows="2" placeholder="Привет, {user}! Читай правила в #канале." required></textarea></label>
+          </form>
+          <% if (customCommands && customCommands.length) { %>
+            <h3>Существующие команды</h3>
+            <table class="rr-table">
+              <thead><tr><th>Команда</th><th>Ответ</th><th></th></tr></thead>
+              <tbody>
+                <% customCommands.forEach(function(cc){ %>
+                  <tr>
+                    <td><code><%= (settings.prefix || '!') + cc.name %></code></td>
+                    <td><%= cc.response.length > 80 ? cc.response.slice(0,80) + '…' : cc.response %></td>
+                    <td>
+                      <form method="POST" action="/dashboard/<%= guild.id %>/customcommands/delete">
+                        <input type="hidden" name="name" value="<%= cc.name %>" />
+                        <button class="btn danger small" type="submit">Удалить</button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } else { %><p class="muted">Пока нет своих команд.</p><% } %>
+        </section>
+      </div>
+
+      <!-- ТЕКСТЫ -->
+      <div class="dash-panel" data-panel="messages">
+        <section class="module" id="messages">
+          <h2>💬 Тексты ответов бота</h2>
+          <p class="muted">Общие ответы команд можно изменить под себя. Приветствия — вкладка 👋, ЛС при наказаниях — 🔨 Модерация, повышение уровня — ⭐ XP, тикеты — 🎫.</p>
+          <form method="POST" action="/dashboard/<%= guild.id %>/messages">
+            <label>Недостаточно прав<input type="text" name="noPermission" value="<%= settings.messages.noPermission %>" /></label>
+            <label>Только для админов<input type="text" name="adminOnly" value="<%= settings.messages.adminOnly %>" /></label>
+            <label>Ошибка выполнения команды<input type="text" name="commandError" value="<%= settings.messages.commandError %>" /></label>
+            <button class="btn" type="submit">Сохранить тексты</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- ЛОГИ -->
+      <div class="dash-panel" data-panel="logging">
+        <section class="module" id="logging">
+          <h2>📜 Логирование</h2>
+          <form method="POST" action="/dashboard/<%= guild.id %>/logging">
+            <label class="switch"><input type="checkbox" name="logging_enabled" <%= settings.logging.enabled ? 'checked' : '' %> /> Включить логи</label>
+            <label>Канал логов (ID)<input type="text" name="logChannelId" value="<%= settings.logging.channelId || '' %>" /></label>
+            <div class="checks">
+              <% [['messageDelete','Удаление сообщений'],['messageEdit','Редактирование'],['memberJoin','Входы'],['memberLeave','Выходы'],['channelCreate','Создание канала'],['channelDelete','Удаление канала'],['channelUpdate','Изменение канала'],['roleCreate','Создание роли'],['roleDelete','Удаление роли'],['roleUpdate','Изменение роли'],['memberBan','Баны'],['memberUnban','Разбаны'],['memberKick','Кики'],['webhookUpdate','Вебхуки'],['guildUpdate','Изменение сервера']].forEach(function(e){ %>
+                <label class="switch"><input type="checkbox" name="ev_<%= e[0] %>" <%= settings.logging.events[e[0]] ? 'checked' : '' %> /> <%= e[1] %></label>
+              <% }) %>
+            </div>
+            <small class="muted">«Кто/что/когда» по каналам, ролям, банам и вебхукам берётся из аудит-лога.</small>
+            <button class="btn" type="submit">Сохранить логи</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- ТИКЕТЫ -->
+      <div class="dash-panel" data-panel="tickets">
+        <section class="module" id="tickets">
+          <h2>🎫 Тикеты</h2>
+          <form method="POST" action="/dashboard/<%= guild.id %>/tickets">
+            <label class="switch"><input type="checkbox" name="tickets_enabled" <%= settings.tickets.enabled ? 'checked' : '' %> /> Включить тикеты</label>
+            <div class="grid2">
+              <label>Категория для тикетов (ID)<input type="text" name="categoryId" value="<%= settings.tickets.categoryId || '' %>" /></label>
+              <label>Роль поддержки (ID)<input type="text" name="supportRoleId" value="<%= settings.tickets.supportRoleId || '' %>" /></label>
+            </div>
+            <label>Заголовок панели<input type="text" name="panelTitle" value="<%= settings.tickets.panelTitle %>" /></label>
+            <label>Описание панели<textarea name="panelDescription" rows="2"><%= settings.tickets.panelDescription %></textarea></label>
+            <label>Текст на кнопке<input type="text" name="panelButtonLabel" value="<%= settings.tickets.panelButtonLabel %>" /></label>
+            <label>Приветствие внутри тикета<textarea name="ticketMessage" rows="2"><%= settings.tickets.welcomeMessage %></textarea></label>
+            <label>Сообщение при закрытии<input type="text" name="closeMessage" value="<%= settings.tickets.closeMessage %>" /></label>
+            <button class="btn" type="submit">Сохранить тикеты</button>
+          </form>
+          <p class="muted">Отправить панель в канал: команда <code>/ticket-panel</code>. Закрыть тикет: кнопка «Закрыть» или <code>/close</code>.</p>
+        </section>
+      </div>
+
+    </div>
   </div>
-
-  <!-- ================= ЛОГИ ================= -->
-  <div class="tab-panel" data-panel="logs">
-    <section class="module" id="logging">
-      <h2>📜 Логирование</h2>
-      <form method="POST" action="/dashboard/<%= guild.id %>/logging">
-        <label class="switch"><input type="checkbox" name="logging_enabled" <%= settings.logging.enabled ? 'checked' : '' %> /> Включить логи</label>
-        <label>Канал логов (ID)<input type="text" name="logChannelId" value="<%= settings.logging.channelId || '' %>" /></label>
-        <div class="checks">
-          <% [['messageDelete','Удаление сообщений'],['messageEdit','Редактирование'],['memberJoin','Входы'],['memberLeave','Выходы'],['channelCreate','Создание канала'],['channelDelete','Удаление канала'],['channelUpdate','Изменение канала'],['roleCreate','Создание роли'],['roleDelete','Удаление роли'],['roleUpdate','Изменение роли'],['memberBan','Баны'],['memberUnban','Разбаны'],['memberKick','Кики'],['webhookUpdate','Вебхуки'],['guildUpdate','Изменение сервера']].forEach(function(e){ %>
-            <label class="switch"><input type="checkbox" name="ev_<%= e[0] %>" <%= settings.logging.events[e[0]] ? 'checked' : '' %> /> <%= e[1] %></label>
-          <% }) %>
-        </div>
-        <small class="muted">«Кто/что/когда» по каналам, ролям, банам и вебхукам берётся из аудит-лога.</small>
-        <button class="btn" type="submit">Сохранить логи</button>
-      </form>
-    </section>
-  </div>
-
-  <!-- ================= ТИКЕТЫ ================= -->
-  <div class="tab-panel" data-panel="tickets">
-    <section class="module" id="tickets">
-      <h2>🎫 Тикеты</h2>
-      <form method="POST" action="/dashboard/<%= guild.id %>/tickets">
-        <label class="switch"><input type="checkbox" name="tickets_enabled" <%= settings.tickets.enabled ? 'checked' : '' %> /> Включить тикеты</label>
-        <div class="grid2">
-          <label>Категория для тикетов (ID)<input type="text" name="categoryId" value="<%= settings.tickets.categoryId || '' %>" /></label>
-          <label>Роль поддержки (ID)<input type="text" name="supportRoleId" value="<%= settings.tickets.supportRoleId || '' %>" /></label>
-        </div>
-        <label>Заголовок панели<input type="text" name="panelTitle" value="<%= settings.tickets.panelTitle %>" /></label>
-        <label>Описание панели<textarea name="panelDescription" rows="2"><%= settings.tickets.panelDescription %></textarea></label>
-        <label>Текст на кнопке<input type="text" name="panelButtonLabel" value="<%= settings.tickets.panelButtonLabel %>" /></label>
-        <label>Приветствие внутри тикета<textarea name="ticketMessage" rows="2"><%= settings.tickets.welcomeMessage %></textarea></label>
-        <label>Сообщение при закрытии<input type="text" name="closeMessage" value="<%= settings.tickets.closeMessage %>" /></label>
-        <button class="btn" type="submit">Сохранить тикеты</button>
-      </form>
-      <p class="muted">Отправить панель в канал: команда <code>/ticket-panel</code>. Закрыть тикет: кнопка «Закрыть» или <code>/close</code>.</p>
-    </section>
-  </div>
-
 </div>
 
 <script>
-  // Вкладки: показываем одну панель за раз.
-  function activateTab(key) {
-    document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === key); });
-    document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-panel') === key); });
+  function activate(key) {
+    document.querySelectorAll('.side-item').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-nav') === key); });
+    document.querySelectorAll('.dash-panel').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-panel') === key); });
+    document.querySelector('.dash-main').scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
-  document.querySelectorAll('.tab').forEach(function (t) {
-    t.addEventListener('click', function () { activateTab(t.getAttribute('data-tab')); });
+  document.querySelectorAll('.side-item').forEach(function (t) {
+    t.addEventListener('click', function () { activate(t.getAttribute('data-nav')); });
   });
-  // После сохранения приходит #anchor секции — открываем нужную вкладку.
   if (location.hash) {
     var target = document.getElementById(location.hash.slice(1));
-    var panel = target && target.closest('.tab-panel');
-    if (panel) activateTab(panel.getAttribute('data-panel'));
+    var panel = target && target.closest('.dash-panel');
+    if (panel) activate(panel.getAttribute('data-panel'));
   }
-
-  // Кнопки «+ ещё …»: клонируют последнюю строку.
   document.querySelectorAll('[data-add]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var container = document.querySelector('.dyn-rows[data-dyn="' + btn.getAttribute('data-add') + '"]');
