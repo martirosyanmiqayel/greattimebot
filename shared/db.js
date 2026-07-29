@@ -91,8 +91,10 @@ function defaultSettings() {
       enabled: false,
       logChannelId: null,          // отдельный канал именно под Anti-Crash
       autoRestore: true,           // восстанавливать удалённое/изменённое
-      punishTimeoutHours: 3,       // Timeout нарушителю
+      punishment: 'timeout',       // что делать с нарушителем: timeout | kick | ban
+      punishTimeoutHours: 3,       // длительность timeout (для режима timeout)
       stripRoles: true,            // снять все роли нарушителю
+      alertOwner: true,            // писать владельцу сервера в ЛС при срабатывании
       // Дополнительные роли-исключения (кроме таблицы whitelist).
       whitelistRoleIds: [],
       // Какие действия отслеживать.
@@ -100,10 +102,11 @@ function defaultSettings() {
         channelDelete: true, channelUpdate: true,
         roleDelete: true, roleUpdate: true,
         channelCreate: false, roleCreate: false,
-        guildUpdate: true,      // имя/иконка/баннер сервера
+        guildUpdate: true,          // имя/иконка/баннер сервера
         webhookDelete: true, webhookUpdate: true,
-        memberKick: true, memberBanAdd: false,
-        botAdd: true            // добавление сторонних ботов
+        memberKick: true, memberBanAdd: true, memberPrune: true,
+        memberRoleUpdate: true,     // выдача опасных ролей (Administrator и т.п.)
+        botAdd: true                // добавление сторонних ботов
       },
       // Пороги: не более N действий за windowSec (даже для доверенных ролей — по TZ).
       // Срабатывание порога = наказание + попытка отката.

@@ -140,7 +140,8 @@ router.post('/xp', async (req, res) => {
 // ---- Anti-Crash ----
 router.post('/anticrash', async (req, res) => {
   const b = req.body;
-  const protectKeys = ['channelDelete', 'channelUpdate', 'roleDelete', 'roleUpdate', 'guildUpdate', 'webhookDelete', 'webhookUpdate', 'memberKick', 'botAdd'];
+  const protectKeys = ['channelDelete', 'channelUpdate', 'roleDelete', 'roleUpdate', 'guildUpdate',
+    'webhookDelete', 'webhookUpdate', 'memberKick', 'memberBanAdd', 'memberPrune', 'memberRoleUpdate', 'botAdd'];
   const protect = {};
   for (const k of protectKeys) protect[k] = bool(b['p_' + k]);
   const limitKeys = ['channelDelete', 'roleDelete', 'memberKick'];
@@ -151,12 +152,15 @@ router.post('/anticrash', async (req, res) => {
       windowSec: parseInt(b['lim_' + k + '_window'], 10) || 30
     };
   }
+  const punishment = ['timeout', 'kick', 'ban'].includes(b.punishment) ? b.punishment : 'timeout';
   await db.updateSettings(req.guild.id, {
     anticrash: {
       enabled: bool(b.anticrash_enabled),
       logChannelId: b.ac_logChannelId || null,
       autoRestore: bool(b.autoRestore),
       stripRoles: bool(b.stripRoles),
+      alertOwner: bool(b.alertOwner),
+      punishment,
       punishTimeoutHours: parseInt(b.punishTimeoutHours, 10) || 3,
       whitelistRoleIds: lines(b.whitelistRoleIds),
       protect,

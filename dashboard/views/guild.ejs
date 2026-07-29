@@ -63,29 +63,61 @@
       <!-- ANTI-CRASH -->
       <div class="dash-panel active" data-panel="anticrash">
         <section class="module" id="anticrash">
-          <h2>🛡️ Anti-Crash — защита от рейда</h2>
-          <p class="muted">Следит за аудит-логом. Если не-whitelist совершает деструктив — снимает роли, выдаёт timeout и откатывает изменение.</p>
+          <h2>🛡️ Anti-Crash — анти-нюк защита</h2>
+          <p class="muted">Бот в реальном времени читает аудит-лог сервера. Как только <b>не доверенный</b> человек делает что-то опасное — бот <b>наказывает</b> его, <b>откатывает</b> изменение и (если включено) <b>пишет владельцу</b>. Ниже расписано, что за что отвечает.</p>
+          <div class="notice"><b>Важно:</b> чтобы всё работало, у бота должны быть права <code>View Audit Log</code>, <code>Manage Channels</code>, <code>Manage Roles</code>, <code>Manage Server</code>, <code>Ban/Kick/Moderate Members</code>, а его роль — <b>выше</b> ролей нарушителей. И включи <b>💾 Backup</b> — из него бот восстанавливает удалённые каналы/роли.</div>
+
           <form method="POST" action="/dashboard/<%= guild.id %>/anticrash">
             <label class="switch"><input type="checkbox" name="anticrash_enabled" <%= settings.anticrash.enabled ? 'checked' : '' %> /> Включить Anti-Crash</label>
+            <small class="muted">Главный выключатель. Пока выключен — бот только смотрит и ничего не делает.</small>
+
             <div class="grid2">
-              <label>Отдельный канал Anti-Crash (ID)<input type="text" name="ac_logChannelId" value="<%= settings.anticrash.logChannelId || '' %>" /></label>
-              <label>Timeout нарушителю (часов)<input type="number" name="punishTimeoutHours" min="0" max="672" value="<%= settings.anticrash.punishTimeoutHours %>" /></label>
+              <label>Отдельный канал Anti-Crash (ID)<input type="text" name="ac_logChannelId" value="<%= settings.anticrash.logChannelId || '' %>" /><small>Куда слать отчёты о срабатываниях. Пусто → в канал логов модерации.</small></label>
+              <label>Наказание нарушителю
+                <select name="punishment">
+                  <% [['timeout','Timeout (снять роли + мут)'],['kick','Кик (снять роли + кик)'],['ban','Бан']].forEach(function(o){ %>
+                    <option value="<%= o[0] %>" <%= (settings.anticrash.punishment||'timeout') === o[0] ? 'selected' : '' %>><%= o[1] %></option>
+                  <% }) %>
+                </select>
+                <small>Что сделать с тем, кто устроил деструктив.</small>
+              </label>
             </div>
+
+            <label>Длительность timeout (часов)<input type="number" name="punishTimeoutHours" min="0" max="672" value="<%= settings.anticrash.punishTimeoutHours %>" /><small>Только для режима «Timeout». Максимум 672 ч (28 дней).</small></label>
+
             <div class="grid2">
               <label class="switch"><input type="checkbox" name="autoRestore" <%= settings.anticrash.autoRestore ? 'checked' : '' %> /> Откатывать изменения</label>
               <label class="switch"><input type="checkbox" name="stripRoles" <%= settings.anticrash.stripRoles ? 'checked' : '' %> /> Снимать все роли нарушителю</label>
             </div>
-            <label>Доверенные роли (ID, по одной на строку)<textarea name="whitelistRoleIds" rows="2"><%= (settings.anticrash.whitelistRoleIds || []).join('\n') %></textarea></label>
+            <small class="muted"><b>Откат</b> — вернуть удалённый канал/роль из backup, отменить изменение, снять опасную роль, отменить бан. <b>Снятие ролей</b> — мгновенно обезоружить нарушителя (кроме управляемых ботом ролей).</small>
+
+            <label class="switch"><input type="checkbox" name="alertOwner" <%= settings.anticrash.alertOwner ? 'checked' : '' %> /> Оповещать владельца сервера в ЛС</label>
+            <small class="muted">При каждом срабатывании владельцу приходит сообщение: кто, что сделал и что бот предпринял.</small>
+
+            <label>Доверенные роли (whitelist по ролям), ID по одной на строку<textarea name="whitelistRoleIds" rows="2"><%= (settings.anticrash.whitelistRoleIds || []).join('\n') %></textarea><small>Участники с этими ролями игнорируются (кроме превышения лимитов ниже). Отдельных людей добавляй в whitelist внизу страницы.</small></label>
+
             <fieldset>
-              <legend>Отслеживать действия</legend>
+              <legend>Что отслеживать (галочка = защищаем)</legend>
               <div class="checks">
-                <% [['channelDelete','удаление канала'],['channelUpdate','изменение канала'],['roleDelete','удаление роли'],['roleUpdate','изменение роли'],['guildUpdate','изменение сервера'],['webhookDelete','удаление вебхука'],['webhookUpdate','изменение вебхука'],['memberKick','кик участника'],['botAdd','добавление бота']].forEach(function(p){ %>
+                <% [
+                  ['channelDelete','Удаление каналов'],['channelUpdate','Изменение каналов'],
+                  ['roleDelete','Удаление ролей'],['roleUpdate','Изменение ролей'],
+                  ['guildUpdate','Изменение сервера (имя/иконка)'],
+                  ['webhookDelete','Удаление вебхуков'],['webhookUpdate','Изменение вебхуков'],
+                  ['memberKick','Кик участника'],['memberPrune','Массовый кик (prune)'],
+                  ['memberBanAdd','Бан участника (откат = разбан)'],
+                  ['memberRoleUpdate','Выдача опасной роли (Admin и т.п.)'],
+                  ['botAdd','Добавление сторонних ботов']
+                ].forEach(function(p){ %>
                   <label class="switch"><input type="checkbox" name="p_<%= p[0] %>" <%= settings.anticrash.protect[p[0]] ? 'checked' : '' %> /> <%= p[1] %></label>
                 <% }) %>
               </div>
+              <small class="muted">«Выдача опасной роли» срабатывает, только если выданная роль реально имеет опасные права (Administrator, Manage Server/Roles/Channels, Ban/Kick и т.п.) — обычная роль не триггерит.</small>
             </fieldset>
+
             <fieldset>
-              <legend>Лимиты (действий за окно — применяются даже к доверенным)</legend>
+              <legend>Лимиты «даже для своих» (антифейл доверенных)</legend>
+              <small class="muted">Если кто-то (включая доверенных) превышает лимит за окно времени — бот всё равно вмешается. Защита на случай угнанного аккаунта админа.</small>
               <% [['channelDelete','Удаление каналов'],['roleDelete','Удаление ролей'],['memberKick','Кики']].forEach(function(p){ var l = settings.anticrash.limits[p[0]] || {count:3,windowSec:30}; %>
                 <div class="grid2">
                   <label><%= p[1] %> — макс. кол-во<input type="number" name="lim_<%= p[0] %>_count" min="1" value="<%= l.count %>" /></label>

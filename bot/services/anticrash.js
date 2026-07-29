@@ -1,12 +1,12 @@
 'use strict';
 
 /**
- * Anti-Crash: реакция на аудит-лог сервера.
- * Если НЕ доверенный участник совершает деструктивное действие — снимаем все роли,
- * выдаём timeout и (по возможности) откатываем изменение. Пороговые лимиты
- * применяются даже к доверенным ролям (по ТЗ).
+ * Anti-Crash (анти-нюк): реакция на аудит-лог сервера.
+ * Если НЕ доверенный участник совершает деструктив — наказываем (снятие ролей +
+ * timeout/kick/ban), откатываем изменение и (опц.) пишем владельцу в ЛС.
+ * Пороговые лимиты применяются даже к доверенным ролям (по ТЗ).
  *
- * Работает через событие guildAuditLogEntryCreate (нужен интент GuildModeration).
+ * Работает через guildAuditLogEntryCreate (нужен интент GuildModeration).
  */
 
 const { AuditLogEvent, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
@@ -17,7 +17,14 @@ const { sendAntiCrashLog } = require('../../shared/modlog');
 const HOUR = 60 * 60 * 1000;
 const MAX_TIMEOUT_MS = 28 * 24 * HOUR;
 
-// AuditLogEvent -> { key: <ключ настроек protect/limits>, kind }
+// Права, выдача которых считается опасной (анти-админ-грант).
+const DANGEROUS_PERMS = [
+  PermissionFlagsBits.Administrator, PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageRoles,
+  PermissionFlagsBits.ManageChannels, PermissionFlagsBits.BanMembers, PermissionFlagsBits.KickMembers,
+  PermissionFlagsBits.ManageWebhooks, PermissionFlagsBits.MentionEveryone, PermissionFlagsBits.ManageGuildExpressions
+];
+
+// AuditLogEvent -> { key, kind }
 const ACTION_MAP = {
   [AuditLogEvent.ChannelDelete]: { key: 'channelDelete', kind: 'delete-channel' },
   [AuditLogEvent.ChannelUpdate]: { key: 'channelUpdate', kind: 'update-channel' },
@@ -27,7 +34,9 @@ const ACTION_MAP = {
   [AuditLogEvent.RoleCreate]: { key: 'roleCreate', kind: 'noop' },
   [AuditLogEvent.GuildUpdate]: { key: 'guildUpdate', kind: 'update-guild' },
   [AuditLogEvent.MemberKick]: { key: 'memberKick', kind: 'member' },
-  [AuditLogEvent.MemberBanAdd]: { key: 'memberBanAdd', kind: 'member' },
+  [AuditLogEvent.MemberPrune]: { key: 'memberPrune', kind: 'member' },
+  [AuditLogEvent.MemberBanAdd]: { key: 'memberBanAdd', kind: 'member-ban' },
+  [AuditLogEvent.MemberRoleUpdate]: { key: 'memberRoleUpdate', kind: 'member-role' },
   [AuditLogEvent.BotAdd]: { key: 'botAdd', kind: 'bot' },
   [AuditLogEvent.WebhookDelete]: { key: 'webhookDelete', kind: 'webhook' },
   [AuditLogEvent.WebhookUpdate]: { key: 'webhookUpdate', kind: 'webhook' }
@@ -36,13 +45,14 @@ const ACTION_MAP = {
 const HUMAN = {
   channelDelete: 'удаление канала', channelUpdate: 'изменение канала', channelCreate: 'создание канала',
   roleDelete: 'удаление роли', roleUpdate: 'изменение роли', roleCreate: 'создание роли',
-  guildUpdate: 'изменение сервера', memberKick: 'кик участника', memberBanAdd: 'бан участника',
+  guildUpdate: 'изменение сервера', memberKick: 'кик участника', memberPrune: 'массовый кик (prune)',
+  memberBanAdd: 'бан участника', memberRoleUpdate: 'выдача опасной роли',
   botAdd: 'добавление бота', webhookDelete: 'удаление вебхука', webhookUpdate: 'изменение вебхука'
 };
 
 // Скользящее окно для лимитов: `${guild}:${user}:${key}` -> [timestamps].
 const rateWindows = new Map();
-// Дедупликация наказаний: `${guild}:${user}` -> timestamp последнего наказания.
+// Дедупликация наказаний: `${guild}:${user}` -> timestamp.
 const recentlyPunished = new Map();
 
 function bumpRate(guildId, userId, key, cfg) {
@@ -63,34 +73,51 @@ async function isTrusted(guild, settings, userId) {
   return !!(member && member.roles.cache.some((r) => roleIds.includes(r.id)));
 }
 
-/** Снять все роли (кроме управляемых) и выдать timeout нарушителю. */
+/** Наказать нарушителя. Режим: strip+timeout | kick | ban. */
 async function punish(guild, userId, settings, reason) {
   const k = `${guild.id}:${userId}`;
   const now = Date.now();
   if (now - (recentlyPunished.get(k) || 0) < 15 * 1000) return { skipped: true };
   recentlyPunished.set(k, now);
 
+  const mode = settings.anticrash.punishment || 'timeout';
   const member = await guild.members.fetch(userId).catch(() => null);
-  const info = { stripped: false, timedOut: false, left: !member };
-  if (!member) return info;
+  const info = { mode, stripped: false, timedOut: false, kicked: false, banned: false, left: !member };
 
-  if (settings.anticrash.stripRoles && member.manageable) {
+  // Снять роли (всегда полезно как первая мера).
+  if (settings.anticrash.stripRoles && member && member.manageable) {
     const keep = member.roles.cache.filter((r) => r.managed).map((r) => r.id);
     await member.roles.set(keep, reason).then(() => { info.stripped = true; }).catch(() => {});
   }
-  const ms = Math.min(MAX_TIMEOUT_MS, (settings.anticrash.punishTimeoutHours || 3) * HOUR);
-  if (member.moderatable) {
-    await member.timeout(ms, reason).then(() => { info.timedOut = true; }).catch(() => {});
+
+  if (mode === 'ban') {
+    await guild.members.ban(userId, { reason }).then(() => { info.banned = true; }).catch(() => {});
+  } else if (mode === 'kick') {
+    if (member && member.kickable) await member.kick(reason).then(() => { info.kicked = true; }).catch(() => {});
+  } else {
+    const ms = Math.min(MAX_TIMEOUT_MS, (settings.anticrash.punishTimeoutHours || 3) * HOUR);
+    if (member && member.moderatable) await member.timeout(ms, reason).then(() => { info.timedOut = true; }).catch(() => {});
   }
+
   await db.addModAction({
     guild_id: guild.id, type: 'anticrash', target_id: userId, moderator: guild.client.user.id,
-    reason, duration_ms: ms, expires_at: now + ms, active: true
+    reason, duration_ms: mode === 'timeout' ? (settings.anticrash.punishTimeoutHours || 3) * HOUR : null,
+    expires_at: null, active: true
   });
   return info;
 }
 
-/** Попытка отката изменения. Возвращает человекочитаемое описание результата. */
-async function tryRestore(entry, guild, settings, map) {
+/** Опасные роли, добавленные участнику в этом audit-событии (member-role). */
+function dangerousAddedRoles(entry, guild) {
+  const add = (entry.changes || []).find((c) => c.key === '$add');
+  if (!add || !Array.isArray(add.new)) return [];
+  return add.new
+    .map((r) => guild.roles.cache.get(r.id))
+    .filter((role) => role && DANGEROUS_PERMS.some((p) => role.permissions.has(p)));
+}
+
+/** Откат изменения. Возвращает человекочитаемое описание. */
+async function tryRestore(entry, guild, settings, map, extra) {
   if (!settings.anticrash.autoRestore) return 'откат выключен';
   try {
     switch (map.kind) {
@@ -141,11 +168,18 @@ async function tryRestore(entry, guild, settings, map) {
       }
       case 'update-guild': {
         const nameChange = (entry.changes || []).find((c) => c.key === 'name');
-        if (nameChange && nameChange.old) {
-          await guild.setName(nameChange.old, 'Anti-Crash revert');
-          return 'имя сервера возвращено';
-        }
+        if (nameChange && nameChange.old) { await guild.setName(nameChange.old, 'Anti-Crash revert'); return 'имя сервера возвращено'; }
         return 'изменение сервера залогировано (иконка/баннер вручную)';
+      }
+      case 'member-ban': {
+        await guild.members.unban(entry.targetId, 'Anti-Crash: несанкционированный бан').catch(() => {});
+        return `бан отменён: <@${entry.targetId}>`;
+      }
+      case 'member-role': {
+        const member = await guild.members.fetch(entry.targetId).catch(() => null);
+        if (!member || !extra || !extra.length) return 'нет опасных ролей для снятия';
+        for (const role of extra) await member.roles.remove(role.id, 'Anti-Crash: опасная роль').catch(() => {});
+        return `сняты опасные роли: ${extra.map((r) => r.name).join(', ')}`;
       }
       case 'bot': {
         const bm = await guild.members.fetch(entry.targetId).catch(() => null);
@@ -162,6 +196,14 @@ async function tryRestore(entry, guild, settings, map) {
   }
 }
 
+/** Оповещение владельца сервера в ЛС. */
+async function alertOwner(guild, embed) {
+  try {
+    const owner = await guild.fetchOwner();
+    if (owner) await owner.send({ embeds: [embed] }).catch(() => {});
+  } catch { /* владелец закрыл ЛС — не критично */ }
+}
+
 /** Основной обработчик события аудит-лога. */
 async function handleAuditEntry(entry, guild) {
   let settings;
@@ -170,7 +212,7 @@ async function handleAuditEntry(entry, guild) {
 
   const executorId = entry.executorId;
   if (!executorId) return;
-  if (executorId === guild.client.user.id) return; // наши собственные действия
+  if (executorId === guild.client.user.id) return; // наши действия
   if (executorId === guild.ownerId) return;         // владельца не трогаем
 
   const map = ACTION_MAP[entry.action];
@@ -180,38 +222,48 @@ async function handleAuditEntry(entry, guild) {
   const protectedOn = !!(settings.anticrash.protect && settings.anticrash.protect[key]);
   const limitCfg = settings.anticrash.limits && settings.anticrash.limits[key];
   const overLimit = limitCfg ? bumpRate(guild.id, executorId, key, limitCfg) : false;
-  const trusted = await isTrusted(guild, settings, executorId);
 
-  // Действуем, если превышен лимит (даже для доверенных) ИЛИ действие защищено и исполнитель недоверенный.
+  // Спец-случай: выдача ролей опасна только если добавили опасную роль.
+  let extra = null;
+  if (map.kind === 'member-role') {
+    extra = dangerousAddedRoles(entry, guild);
+    if (!extra.length) return; // обычная выдача роли — игнор
+  }
+
+  const trusted = await isTrusted(guild, settings, executorId);
   const act = overLimit || (!trusted && protectedOn);
   if (!act) return;
 
   const human = HUMAN[key] || key;
   const reason = `Anti-Crash: ${human}${overLimit ? ' (превышен лимит)' : ''}`;
 
-  const restoreResult = await tryRestore(entry, guild, settings, map);
+  const restoreResult = await tryRestore(entry, guild, settings, map, extra);
   const punishResult = await punish(guild, executorId, settings, reason);
 
   await db.addActionLog(guild.id, 'anticrash', executorId, entry.targetId, {
     action: key, overLimit, trusted, restore: restoreResult, punish: punishResult
   });
 
+  const punishText = punishResult.skipped ? 'уже наказан' : [
+    punishResult.stripped ? 'сняты роли' : null,
+    punishResult.banned ? 'бан' : null,
+    punishResult.kicked ? 'кик' : null,
+    punishResult.timedOut ? `timeout ${settings.anticrash.punishTimeoutHours}ч` : null,
+    punishResult.left ? 'участник уже вышел' : null
+  ].filter(Boolean).join(', ') || 'не удалось';
+
   const embed = new EmbedBuilder()
-    .setColor(0xff0000)
-    .setTitle('🛡️ Anti-Crash сработал')
+    .setColor(0xff0000).setTitle('🛡️ Anti-Crash сработал')
     .addFields(
-      { name: 'Нарушитель', value: `<@${executorId}> (${executorId})` },
+      { name: 'Сервер', value: guild.name, inline: true },
+      { name: 'Нарушитель', value: `<@${executorId}> (${executorId})`, inline: true },
       { name: 'Действие', value: human, inline: true },
       { name: 'Лимит', value: overLimit ? 'превышен' : 'нет', inline: true },
-      { name: 'Наказание', value: punishResult.skipped ? 'уже наказан' : [
-        punishResult.stripped ? 'сняты роли' : null,
-        punishResult.timedOut ? `timeout ${settings.anticrash.punishTimeoutHours}ч` : null,
-        punishResult.left ? 'участник уже вышел' : null
-      ].filter(Boolean).join(', ') || 'не удалось' },
+      { name: 'Наказание', value: punishText, inline: true },
       { name: 'Восстановление', value: restoreResult }
-    )
-    .setTimestamp();
+    ).setTimestamp();
   sendAntiCrashLog(guild, settings, embed);
+  if (settings.anticrash.alertOwner) alertOwner(guild, embed);
 }
 
-module.exports = { handleAuditEntry, ACTION_MAP };
+module.exports = { handleAuditEntry, ACTION_MAP, DANGEROUS_PERMS };
