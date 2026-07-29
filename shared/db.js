@@ -95,6 +95,7 @@ function defaultSettings() {
       punishTimeoutHours: 3,       // длительность timeout (для режима timeout)
       stripRoles: true,            // снять все роли нарушителю
       alertOwner: true,            // писать владельцу сервера в ЛС при срабатывании
+      alertWhitelist: true,        // писать всем из whitelist в ЛС при срабатывании
       // Дополнительные роли-исключения (кроме таблицы whitelist).
       whitelistRoleIds: [],
       // Какие действия отслеживать.

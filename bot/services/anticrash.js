@@ -182,8 +182,12 @@ async function tryRestore(entry, guild, settings, map, extra) {
         return `сняты опасные роли: ${extra.map((r) => r.name).join(', ')}`;
       }
       case 'bot': {
+        // Баним добавленного бота, чтобы он не остался и не смог вернуться.
+        const banned = await guild.members.ban(entry.targetId, { reason: 'Anti-Crash: несанкционированный бот' })
+          .then(() => true).catch(() => false);
+        if (banned) return `бот <@${entry.targetId}> удалён (бан)`;
         const bm = await guild.members.fetch(entry.targetId).catch(() => null);
-        if (bm && bm.kickable) { await bm.kick('Anti-Crash: несанкционированный бот'); return 'добавленный бот удалён'; }
+        if (bm && bm.kickable) { await bm.kick('Anti-Crash: несанкционированный бот'); return 'добавленный бот удалён (кик)'; }
         return 'не удалось удалить бота';
       }
       case 'member':
@@ -196,12 +200,18 @@ async function tryRestore(entry, guild, settings, map, extra) {
   }
 }
 
-/** Оповещение владельца сервера в ЛС. */
-async function alertOwner(guild, embed) {
-  try {
-    const owner = await guild.fetchOwner();
-    if (owner) await owner.send({ embeds: [embed] }).catch(() => {});
-  } catch { /* владелец закрыл ЛС — не критично */ }
+/** Разослать отчёт о срабатывании: владельцу и/или всем из whitelist (без дублей). */
+async function alertRecipients(guild, settings, embed) {
+  const ids = new Set();
+  if (settings.anticrash.alertOwner) ids.add(guild.ownerId);
+  if (settings.anticrash.alertWhitelist) {
+    const wl = await db.whitelistList(guild.id).catch(() => []);
+    for (const row of wl) ids.add(row.user_id);
+  }
+  for (const id of ids) {
+    const user = await guild.client.users.fetch(id).catch(() => null);
+    if (user) user.send({ embeds: [embed] }).catch(() => {}); // ЛС закрыты — не критично
+  }
 }
 
 /** Основной обработчик события аудит-лога. */
@@ -231,7 +241,9 @@ async function handleAuditEntry(entry, guild) {
   }
 
   const trusted = await isTrusted(guild, settings, executorId);
-  const act = overLimit || (!trusted && protectedOn);
+  // Добавление бота караем даже для доверенных — whitelist тут не спасает.
+  const bypassWhitelist = map.kind === 'bot';
+  const act = overLimit || (protectedOn && (!trusted || bypassWhitelist));
   if (!act) return;
 
   const human = HUMAN[key] || key;
@@ -263,7 +275,7 @@ async function handleAuditEntry(entry, guild) {
       { name: 'Восстановление', value: restoreResult }
     ).setTimestamp();
   sendAntiCrashLog(guild, settings, embed);
-  if (settings.anticrash.alertOwner) alertOwner(guild, embed);
+  if (settings.anticrash.alertOwner || settings.anticrash.alertWhitelist) alertRecipients(guild, settings, embed);
 }
 
 module.exports = { handleAuditEntry, ACTION_MAP, DANGEROUS_PERMS };

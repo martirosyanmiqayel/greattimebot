@@ -91,8 +91,11 @@
             </div>
             <small class="muted"><b>Откат</b> — вернуть удалённый канал/роль из backup, отменить изменение, снять опасную роль, отменить бан. <b>Снятие ролей</b> — мгновенно обезоружить нарушителя (кроме управляемых ботом ролей).</small>
 
-            <label class="switch"><input type="checkbox" name="alertOwner" <%= settings.anticrash.alertOwner ? 'checked' : '' %> /> Оповещать владельца сервера в ЛС</label>
-            <small class="muted">При каждом срабатывании владельцу приходит сообщение: кто, что сделал и что бот предпринял.</small>
+            <div class="grid2">
+              <label class="switch"><input type="checkbox" name="alertOwner" <%= settings.anticrash.alertOwner ? 'checked' : '' %> /> Оповещать владельца в ЛС</label>
+              <label class="switch"><input type="checkbox" name="alertWhitelist" <%= settings.anticrash.alertWhitelist ? 'checked' : '' %> /> Оповещать всех из whitelist в ЛС</label>
+            </div>
+            <small class="muted">При каждом срабатывании в ЛС приходит отчёт (кто, что сделал, что бот предпринял) — владельцу и/или всем доверенным из whitelist, как получает владелец.</small>
 
             <label>Доверенные роли (whitelist по ролям), ID по одной на строку<textarea name="whitelistRoleIds" rows="2"><%= (settings.anticrash.whitelistRoleIds || []).join('\n') %></textarea><small>Участники с этими ролями игнорируются (кроме превышения лимитов ниже). Отдельных людей добавляй в whitelist внизу страницы.</small></label>
 
@@ -107,12 +110,12 @@
                   ['memberKick','Кик участника'],['memberPrune','Массовый кик (prune)'],
                   ['memberBanAdd','Бан участника (откат = разбан)'],
                   ['memberRoleUpdate','Выдача опасной роли (Admin и т.п.)'],
-                  ['botAdd','Добавление сторонних ботов']
+                  ['botAdd','Добавление ботов (даже из whitelist!)']
                 ].forEach(function(p){ %>
                   <label class="switch"><input type="checkbox" name="p_<%= p[0] %>" <%= settings.anticrash.protect[p[0]] ? 'checked' : '' %> /> <%= p[1] %></label>
                 <% }) %>
               </div>
-              <small class="muted">«Выдача опасной роли» срабатывает, только если выданная роль реально имеет опасные права (Administrator, Manage Server/Roles/Channels, Ban/Kick и т.п.) — обычная роль не триггерит.</small>
+              <small class="muted">«Выдача опасной роли» срабатывает, только если выданная роль реально имеет опасные права (Administrator, Manage Server/Roles/Channels, Ban/Kick и т.п.) — обычная роль не триггерит. «Добавление ботов» карается <b>даже если человек в whitelist</b>: добавленный бот сразу банится, а тот, кто его добавил — получает наказание. Только владелец сервера может добавлять ботов.</small>
             </fieldset>
 
             <fieldset>

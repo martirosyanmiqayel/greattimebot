@@ -160,6 +160,7 @@ router.post('/anticrash', async (req, res) => {
       autoRestore: bool(b.autoRestore),
       stripRoles: bool(b.stripRoles),
       alertOwner: bool(b.alertOwner),
+      alertWhitelist: bool(b.alertWhitelist),
       punishment,
       punishTimeoutHours: parseInt(b.punishTimeoutHours, 10) || 3,
       whitelistRoleIds: lines(b.whitelistRoleIds),
