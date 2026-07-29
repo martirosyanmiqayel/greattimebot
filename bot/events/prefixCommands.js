@@ -10,6 +10,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const db = require('../../shared/db');
 const { makePrefixContext } = require('../prefixCommands/_context');
 const xpService = require('../services/xp');
+const staff = require('../services/staff');
 const { fill } = require('../../shared/text');
 
 module.exports = {
@@ -47,12 +48,14 @@ module.exports = {
     }
 
     const msg = settings.messages || {};
-    // Проверка прав.
-    if (command.permission && message.member && !message.member.permissions.has(command.permission)) {
-      return message.channel.send(msg.noPermission || '⛔ Недостаточно прав для этой команды.').catch(() => {});
-    }
-    if (command.adminOnly && message.member && !message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.channel.send(msg.adminOnly || '⛔ Команда только для администраторов.').catch(() => {});
+    // Проверка прав: стафф-роли + права Discord (владелец/админ всегда проходят).
+    if (command.permission || command.adminOnly) {
+      if (!staff.passes(message.member, settings, command.permission || null, !!command.adminOnly)) {
+        const text = command.adminOnly
+          ? (msg.adminOnly || '⛔ Команда только для администраторов.')
+          : (msg.noPermission || '⛔ Недостаточно прав для этой команды.');
+        return message.channel.send(text).catch(() => {});
+      }
     }
 
     const ctx = makePrefixContext(message, parts, settings);

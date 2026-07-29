@@ -201,6 +201,14 @@ router.post('/backup/delete', async (req, res) => {
   res.redirect(`/dashboard/${req.guild.id}?saved=backup_deleted#backup`);
 });
 
+// ---- Стафф-роли ----
+router.post('/staff', async (req, res) => {
+  const b = req.body;
+  const mode = ['either', 'roleOnly'].includes(b.mode) ? b.mode : 'either';
+  await db.updateSettings(req.guild.id, { staff: { roleIds: lines(b.roleIds), mode } });
+  res.redirect(`/dashboard/${req.guild.id}?saved=staff#staff`);
+});
+
 // ---- Тексты ответов бота ----
 router.post('/messages', async (req, res) => {
   const b = req.body;

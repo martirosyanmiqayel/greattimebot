@@ -9,6 +9,7 @@ const {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder
 } = require('discord.js');
 const db = require('../../shared/db');
+const staff = require('../services/staff');
 
 module.exports = {
   name: 'interactionCreate',
@@ -16,6 +17,19 @@ module.exports = {
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
       if (!command) return;
+
+      // Стафф-гейт: для команд с ограничением по правам проверяем стафф-роли.
+      if (interaction.inGuild()) {
+        let dmp = null;
+        try { dmp = command.data.toJSON().default_member_permissions; } catch { /* нет ограничения */ }
+        if (dmp) {
+          const settings = await db.getSettings(interaction.guild.id);
+          if (!staff.passes(interaction.member, settings, BigInt(dmp), false)) {
+            return interaction.reply({ content: settings.messages.noPermission || '⛔ Недостаточно прав для этой команды.', ephemeral: true }).catch(() => {});
+          }
+        }
+      }
+
       try {
         await command.execute(interaction);
       } catch (err) {

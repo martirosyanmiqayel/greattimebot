@@ -117,6 +117,12 @@ function defaultSettings() {
         memberKick: { count: 3, windowSec: 30 }
       }
     },
+    // Стафф-роли: кто считается персоналом и имеет доступ к командам мод/настроек.
+    // mode: 'either' (роль ИЛИ право Discord) | 'roleOnly' (только по роли).
+    staff: {
+      roleIds: [],
+      mode: 'either'
+    },
     // Редактируемые тексты ответов бота (общие для команд). Placeholders: {user}
     messages: {
       noPermission: '⛔ Недостаточно прав для этой команды.',

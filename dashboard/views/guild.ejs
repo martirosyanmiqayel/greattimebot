@@ -34,6 +34,7 @@
     <nav class="dash-nav">
       <% [
         ['anticrash','🛡️','Anti-Crash'], ['backup','💾','Backup'], ['xp','⭐','XP и уровни'],
+        ['staff','👮','Стафф-роли'],
         ['moderation','🔨','Модерация'], ['welcome','👋','Приветствия'], ['autorole','🎭','Автороли'],
         ['reactionroles','✨','Reaction-роли'], ['customcommands','🧩','Свои команды'], ['messages','💬','Тексты'],
         ['logging','📜','Логи'], ['tickets','🎫','Тикеты']
@@ -240,6 +241,27 @@
             </fieldset>
             <button class="btn" type="submit">Сохранить XP</button>
           </form>
+        </section>
+      </div>
+
+      <!-- СТАФФ-РОЛИ -->
+      <div class="dash-panel" data-panel="staff">
+        <section class="module" id="staff">
+          <h2>👮 Стафф-роли — доступ к командам</h2>
+          <p class="muted">Выбери роли, которые считаются «стаффом» (администрация/модерация). Команды модерации и настроек будут доступны только обладателям этих ролей. У кого роли нет — бот ответит: «<%= settings.messages.noPermission %>».</p>
+          <div class="notice"><b>Защита от блокировки:</b> владелец сервера и участники с правом <b>Администратор</b> имеют доступ всегда, даже без стафф-роли — чтобы случайной настройкой не закрыть доступ самому себе.</div>
+          <form method="POST" action="/dashboard/<%= guild.id %>/staff">
+            <label>Стафф-роли (ID ролей, по одной на строку)<textarea name="roleIds" rows="4" placeholder="123456789012345678&#10;234567890123456789"><%= (settings.staff.roleIds || []).join('\n') %></textarea><small>Кто в этих ролях — считается персоналом. Остальные («игроки») получают «нет прав» на командах модерации/настроек.</small></label>
+            <label>Режим доступа
+              <select name="mode">
+                <option value="either" <%= (settings.staff.mode || 'either') === 'either' ? 'selected' : '' %>>Мягко: стафф-роль ИЛИ право Discord</option>
+                <option value="roleOnly" <%= settings.staff.mode === 'roleOnly' ? 'selected' : '' %>>Строго: только по стафф-роли</option>
+              </select>
+              <small><b>Мягко</b> — пускает и тех, у кого есть роль, и тех, у кого есть соответствующее право Discord. <b>Строго</b> — доступ ТОЛЬКО у обладателей стафф-роли (админ/владелец всё равно проходят).</small>
+            </label>
+            <button class="btn" type="submit">Сохранить стафф-роли</button>
+          </form>
+          <p class="muted hint">Работает для <code>!</code>-команд полностью. Для <code>/</code>-команд Discord ещё и сам скрывает их по правам — чтобы стафф-роль без прав Discord видела слэш-команды, дай этой роли нужные права в Discord или пользуйся <code>!</code>-командами.</p>
         </section>
       </div>
 
