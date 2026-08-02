@@ -18,6 +18,18 @@ function sendServerLog(guild, settings, embed) {
   sendToChannel(guild, settings.logging.channelId, embed);
 }
 
+/** ID канала для категории логов (messages/members/roles/voice/moderation/tickets/server). */
+function logChannelId(settings, category) {
+  const ch = (settings.logging && settings.logging.channels) || {};
+  return ch[category] || (settings.logging && settings.logging.channelId) || null;
+}
+
+/** Отправить лог в канал нужной категории (или в общий, если для категории не задан). */
+function sendCategoryLog(guild, settings, category, embed) {
+  if (!settings.logging || !settings.logging.enabled) return;
+  sendToChannel(guild, logChannelId(settings, category), embed);
+}
+
 /**
  * Отдельный канал Anti-Crash. Если он не задан — падаем на общий канal логов
  * модерации, чтобы событие безопасности не потерялось.
@@ -28,4 +40,4 @@ function sendAntiCrashLog(guild, settings, embed) {
   sendToChannel(guild, id, embed);
 }
 
-module.exports = { sendToChannel, sendModLog, sendServerLog, sendAntiCrashLog };
+module.exports = { sendToChannel, sendModLog, sendServerLog, sendAntiCrashLog, sendCategoryLog, logChannelId };

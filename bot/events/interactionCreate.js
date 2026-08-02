@@ -10,6 +10,7 @@ const {
 } = require('discord.js');
 const db = require('../../shared/db');
 const staff = require('../services/staff');
+const ticketlog = require('../services/ticketlog');
 
 module.exports = {
   name: 'interactionCreate',
@@ -78,6 +79,7 @@ async function openTicket(interaction) {
   }
 
   await db.openTicket(guild.id, channel.id, interaction.user.id);
+  ticketlog.logOpen(guild, settings, interaction.user, channel);
 
   const closeRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId('ticket_close').setLabel('Закрыть тикет').setStyle(ButtonStyle.Danger).setEmoji('🔒')
@@ -97,6 +99,7 @@ async function closeTicket(interaction) {
   const channel = interaction.channel;
   const settings = await db.getSettings(interaction.guild.id);
   await db.closeTicket(channel.id);
+  ticketlog.logClose(interaction.guild, settings, interaction.user, channel);
   await interaction.reply({ content: settings.tickets.closeMessage || 'Тикет закрывается через 5 секунд...' });
   setTimeout(() => channel.delete().catch(() => {}), 5000);
 }

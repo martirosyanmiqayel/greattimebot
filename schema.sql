@@ -35,9 +35,12 @@ create table if not exists reaction_roles (
   guild_id   text not null,
   message_id text not null,
   emoji      text not null,
-  role_id    text not null
+  role_id    text not null,
+  max_roles  int  not null default 0   -- лимит ролей на пользователя с этого поста (0 = без лимита)
 );
 create index if not exists reaction_roles_msg_idx on reaction_roles (message_id, emoji);
+-- Если таблица уже создана раньше — добавить колонку:
+alter table reaction_roles add column if not exists max_roles int not null default 0;
 
 -- ============================================================
 -- XP-система

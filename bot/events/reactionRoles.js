@@ -47,7 +47,18 @@ module.exports = [
       const guild = reaction.message.guild;
       if (!canManage(guild, rr.role_id)) return;
       const member = await guild.members.fetch(user.id).catch(() => null);
-      if (member) member.roles.add(rr.role_id, 'Reaction role').catch((e) => console.error('[reactionroles] add:', e.message));
+      if (!member) return;
+
+      // Лимит ролей на пост: не даём взять больше max_roles ролей с этой панели.
+      if (rr.max_roles && rr.max_roles > 0 && !member.roles.cache.has(rr.role_id)) {
+        const all = await db.listReactionRolesForMessage(reaction.message.id);
+        const held = all.filter((x) => member.roles.cache.has(x.role_id)).length;
+        if (held >= rr.max_roles) {
+          await reaction.users.remove(user.id).catch(() => {}); // снимаем реакцию — лимит достигнут
+          return;
+        }
+      }
+      member.roles.add(rr.role_id, 'Reaction role').catch((e) => console.error('[reactionroles] add:', e.message));
     }
   },
   {

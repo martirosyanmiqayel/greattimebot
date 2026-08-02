@@ -8,23 +8,23 @@
 
 const { AuditLogEvent, EmbedBuilder } = require('discord.js');
 const db = require('../../shared/db');
-const { sendServerLog } = require('../../shared/modlog');
+const { sendCategoryLog } = require('../../shared/modlog');
 
-// action -> { flag (ключ в logging.events), title, color, targetType }
+// action -> { flag (ключ в logging.events), title, color, targetType, cat (категория канала) }
 const MAP = {
-  [AuditLogEvent.ChannelCreate]: { flag: 'channelCreate', title: '📁 Канал создан', color: 0x57f287, targetType: 'channel' },
-  [AuditLogEvent.ChannelDelete]: { flag: 'channelDelete', title: '🗑️ Канал удалён', color: 0xed4245, targetType: 'channelName' },
-  [AuditLogEvent.ChannelUpdate]: { flag: 'channelUpdate', title: '✏️ Канал изменён', color: 0xfaa61a, targetType: 'channel' },
-  [AuditLogEvent.RoleCreate]: { flag: 'roleCreate', title: '➕ Роль создана', color: 0x57f287, targetType: 'role' },
-  [AuditLogEvent.RoleDelete]: { flag: 'roleDelete', title: '➖ Роль удалена', color: 0xed4245, targetType: 'roleName' },
-  [AuditLogEvent.RoleUpdate]: { flag: 'roleUpdate', title: '✏️ Роль изменена', color: 0xfaa61a, targetType: 'role' },
-  [AuditLogEvent.MemberBanAdd]: { flag: 'memberBan', title: '🔨 Участник забанен', color: 0xed4245, targetType: 'member' },
-  [AuditLogEvent.MemberBanRemove]: { flag: 'memberUnban', title: '♻️ Участник разбанен', color: 0x57f287, targetType: 'member' },
-  [AuditLogEvent.MemberKick]: { flag: 'memberKick', title: '👢 Участник кикнут', color: 0xe67e22, targetType: 'member' },
-  [AuditLogEvent.WebhookCreate]: { flag: 'webhookUpdate', title: '🪝 Вебхук создан', color: 0x57f287, targetType: 'id' },
-  [AuditLogEvent.WebhookUpdate]: { flag: 'webhookUpdate', title: '🪝 Вебхук изменён', color: 0xfaa61a, targetType: 'id' },
-  [AuditLogEvent.WebhookDelete]: { flag: 'webhookUpdate', title: '🪝 Вебхук удалён', color: 0xed4245, targetType: 'id' },
-  [AuditLogEvent.GuildUpdate]: { flag: 'guildUpdate', title: '⚙️ Сервер изменён', color: 0xfaa61a, targetType: 'guild' }
+  [AuditLogEvent.ChannelCreate]: { flag: 'channelCreate', title: '📁 Канал создан', color: 0x57f287, targetType: 'channel', cat: 'server' },
+  [AuditLogEvent.ChannelDelete]: { flag: 'channelDelete', title: '🗑️ Канал удалён', color: 0xed4245, targetType: 'channelName', cat: 'server' },
+  [AuditLogEvent.ChannelUpdate]: { flag: 'channelUpdate', title: '✏️ Канал изменён', color: 0xfaa61a, targetType: 'channel', cat: 'server' },
+  [AuditLogEvent.RoleCreate]: { flag: 'roleCreate', title: '➕ Роль создана', color: 0x57f287, targetType: 'role', cat: 'roles' },
+  [AuditLogEvent.RoleDelete]: { flag: 'roleDelete', title: '➖ Роль удалена', color: 0xed4245, targetType: 'roleName', cat: 'roles' },
+  [AuditLogEvent.RoleUpdate]: { flag: 'roleUpdate', title: '✏️ Роль изменена', color: 0xfaa61a, targetType: 'role', cat: 'roles' },
+  [AuditLogEvent.MemberBanAdd]: { flag: 'memberBan', title: '🔨 Участник забанен', color: 0xed4245, targetType: 'member', cat: 'moderation' },
+  [AuditLogEvent.MemberBanRemove]: { flag: 'memberUnban', title: '♻️ Участник разбанен', color: 0x57f287, targetType: 'member', cat: 'moderation' },
+  [AuditLogEvent.MemberKick]: { flag: 'memberKick', title: '👢 Участник кикнут', color: 0xe67e22, targetType: 'member', cat: 'moderation' },
+  [AuditLogEvent.WebhookCreate]: { flag: 'webhookUpdate', title: '🪝 Вебхук создан', color: 0x57f287, targetType: 'id', cat: 'server' },
+  [AuditLogEvent.WebhookUpdate]: { flag: 'webhookUpdate', title: '🪝 Вебхук изменён', color: 0xfaa61a, targetType: 'id', cat: 'server' },
+  [AuditLogEvent.WebhookDelete]: { flag: 'webhookUpdate', title: '🪝 Вебхук удалён', color: 0xed4245, targetType: 'id', cat: 'server' },
+  [AuditLogEvent.GuildUpdate]: { flag: 'guildUpdate', title: '⚙️ Сервер изменён', color: 0xfaa61a, targetType: 'guild', cat: 'server' }
 };
 
 function targetLabel(entry, type) {
@@ -69,7 +69,7 @@ module.exports = {
     if (changes) embed.addFields({ name: 'Изменения', value: changes });
     if (entry.reason) embed.addFields({ name: 'Причина', value: entry.reason.slice(0, 512) });
 
-    sendServerLog(guild, settings, embed);
+    sendCategoryLog(guild, settings, info.cat, embed);
     await db.addActionLog(guild.id, info.flag, entry.executorId, entry.targetId, { reason: entry.reason || null });
   }
 };

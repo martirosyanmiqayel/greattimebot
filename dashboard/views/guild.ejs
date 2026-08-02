@@ -342,7 +342,10 @@
           <h2>✨ Роли по реакции</h2>
           <p class="muted">Бот опубликует сообщение в указанном канале и повесит реакции. Кто нажмёт реакцию — получит роль; уберёт — роль снимется.</p>
           <form method="POST" action="/dashboard/<%= guild.id %>/reactionroles">
-            <label>Канал для публикации (ID)<input type="text" name="channelId" placeholder="123456789012345678" required /></label>
+            <div class="grid2">
+              <label>Канал для публикации (ID)<input type="text" name="channelId" placeholder="123456789012345678" required /></label>
+              <label>Лимит ролей с этого поста<input type="number" name="maxRoles" min="0" value="0" /><small>0 = без лимита. Напр. 1 — можно взять только одну роль из панели; при попытке взять лишнюю бот снимет реакцию.</small></label>
+            </div>
             <label>Текст сообщения<textarea name="message" rows="2">Выбери себе роль реакцией ниже 👇</textarea></label>
             <div class="dyn-rows" data-dyn="rr">
               <% for (let i = 0; i < 3; i++) { %>
@@ -433,15 +436,37 @@
       <div class="dash-panel" data-panel="logging">
         <section class="module" id="logging">
           <h2>📜 Логирование</h2>
+          <p class="muted">Можно разделить логи по каналам: роли — в один канал, войс — в другой, модерация/участники/тикеты — каждый в свой. Если для категории канал не задан — лог идёт в <b>общий</b>.</p>
           <form method="POST" action="/dashboard/<%= guild.id %>/logging">
             <label class="switch"><input type="checkbox" name="logging_enabled" <%= settings.logging.enabled ? 'checked' : '' %> /> Включить логи</label>
-            <label>Канал логов (ID)<input type="text" name="logChannelId" value="<%= settings.logging.channelId || '' %>" /></label>
-            <div class="checks">
-              <% [['messageDelete','Удаление сообщений'],['messageEdit','Редактирование'],['memberJoin','Входы'],['memberLeave','Выходы'],['channelCreate','Создание канала'],['channelDelete','Удаление канала'],['channelUpdate','Изменение канала'],['roleCreate','Создание роли'],['roleDelete','Удаление роли'],['roleUpdate','Изменение роли'],['memberBan','Баны'],['memberUnban','Разбаны'],['memberKick','Кики'],['webhookUpdate','Вебхуки'],['guildUpdate','Изменение сервера']].forEach(function(e){ %>
-                <label class="switch"><input type="checkbox" name="ev_<%= e[0] %>" <%= settings.logging.events[e[0]] ? 'checked' : '' %> /> <%= e[1] %></label>
-              <% }) %>
-            </div>
-            <small class="muted">«Кто/что/когда» по каналам, ролям, банам и вебхукам берётся из аудит-лога.</small>
+            <label>Общий канал логов (ID) — fallback<input type="text" name="logChannelId" value="<%= settings.logging.channelId || '' %>" /><small>Сюда попадёт всё, для чего не задан отдельный канал ниже.</small></label>
+
+            <fieldset>
+              <legend>Отдельные каналы по категориям (ID, пусто = общий)</legend>
+              <div class="grid2">
+                <% var ch = settings.logging.channels || {}; [
+                  ['messages','💬 Сообщения (удаление/правка)'],
+                  ['members','👥 Участники (входы/выходы)'],
+                  ['roles','🎭 Роли (создание/удаление/изменение)'],
+                  ['voice','🔊 Войс (заход/выход/переход)'],
+                  ['moderation','🔨 Модерация (баны/кики/разбаны)'],
+                  ['tickets','🎫 Тикеты (открыл/закрыл)'],
+                  ['server','⚙️ Сервер (каналы/вебхуки/сервер)']
+                ].forEach(function(c){ %>
+                  <label><%= c[1] %><input type="text" name="ch_<%= c[0] %>" value="<%= ch[c[0]] || '' %>" placeholder="общий" /></label>
+                <% }) %>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Что логировать</legend>
+              <div class="checks">
+                <% [['messageDelete','Удаление сообщений'],['messageEdit','Редактирование'],['memberJoin','Входы'],['memberLeave','Выходы'],['channelCreate','Создание канала'],['channelDelete','Удаление канала'],['channelUpdate','Изменение канала'],['roleCreate','Создание роли'],['roleDelete','Удаление роли'],['roleUpdate','Изменение роли'],['memberBan','Баны'],['memberUnban','Разбаны'],['memberKick','Кики'],['webhookUpdate','Вебхуки'],['guildUpdate','Изменение сервера'],['voice','Голосовые'],['ticketOpen','Открытие тикета'],['ticketClose','Закрытие тикета']].forEach(function(e){ %>
+                  <label class="switch"><input type="checkbox" name="ev_<%= e[0] %>" <%= settings.logging.events[e[0]] ? 'checked' : '' %> /> <%= e[1] %></label>
+                <% }) %>
+              </div>
+            </fieldset>
+            <small class="muted">«Кто/что/когда» по каналам, ролям, банам и вебхукам берётся из аудит-лога (нужно право бота <code>View Audit Log</code>). Модерация от команд бота (<code>!ban</code>, <code>!mute</code>) пишется в канал из раздела 🔨 Модерация.</small>
             <button class="btn" type="submit">Сохранить логи</button>
           </form>
         </section>

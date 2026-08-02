@@ -14,6 +14,7 @@ module.exports = [
         .eq('guild_id', ctx.guild.id).eq('channel_id', ctx.channel.id).eq('status', 'open').maybeSingle();
       if (!data) return ctx.error('Эта команда работает только внутри тикет-канала.');
       await db.closeTicket(ctx.channel.id);
+      require('../services/ticketlog').logClose(ctx.guild, ctx.settings, ctx.author, ctx.channel);
       await ctx.reply(ctx.settings.tickets.closeMessage || 'Тикет закрывается через 5 секунд...');
       setTimeout(() => ctx.channel.delete().catch(() => {}), 5000);
     }

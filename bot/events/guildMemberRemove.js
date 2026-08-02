@@ -2,6 +2,7 @@
 const { EmbedBuilder } = require('discord.js');
 const db = require('../../shared/db');
 const { fill } = require('../../shared/text');
+const { sendCategoryLog } = require('../../shared/modlog');
 
 module.exports = {
   name: 'guildMemberRemove',
@@ -16,12 +17,10 @@ module.exports = {
         ch.send({ embeds: [embed] }).catch(() => {});
       }
     }
-    if (s.logging.enabled && s.logging.channelId && s.logging.events.memberLeave) {
-      const ch = member.guild.channels.cache.get(s.logging.channelId);
-      if (ch) {
-        const embed = new EmbedBuilder().setAuthor({ name: 'Участник вышел', iconURL: member.user ? member.user.displayAvatarURL() : undefined }).setDescription(`${member.user ? member.user.tag : member.id}`).setColor(0xed4245).setTimestamp();
-        ch.send({ embeds: [embed] }).catch(() => {});
-      }
+    if (s.logging.enabled && s.logging.events.memberLeave) {
+      const embed = new EmbedBuilder().setAuthor({ name: 'Участник вышел', iconURL: member.user ? member.user.displayAvatarURL() : undefined })
+        .setDescription(`${member.user ? member.user.tag : member.id}`).setColor(0xed4245).setTimestamp();
+      sendCategoryLog(member.guild, s, 'members', embed);
     }
   }
 };

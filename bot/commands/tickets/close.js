@@ -17,6 +17,7 @@ module.exports = {
       return interaction.reply({ content: 'Эта команда работает только внутри тикет-канала.', ephemeral: true });
     }
     await db.closeTicket(interaction.channel.id);
+    require('../../services/ticketlog').logClose(interaction.guild, s, interaction.user, interaction.channel);
     await interaction.reply({ content: s.tickets.closeMessage || 'Тикет закрывается через 5 секунд...' });
     setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
   }

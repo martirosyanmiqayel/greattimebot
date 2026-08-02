@@ -94,14 +94,18 @@ const LOG_EVENTS = [
   'messageDelete', 'messageEdit', 'memberJoin', 'memberLeave',
   'channelCreate', 'channelDelete', 'channelUpdate',
   'roleCreate', 'roleDelete', 'roleUpdate',
-  'memberBan', 'memberUnban', 'memberKick', 'webhookUpdate', 'guildUpdate'
+  'memberBan', 'memberUnban', 'memberKick', 'webhookUpdate', 'guildUpdate',
+  'voice', 'ticketOpen', 'ticketClose'
 ];
+const LOG_CATEGORIES = ['messages', 'members', 'roles', 'voice', 'moderation', 'tickets', 'server'];
 router.post('/logging', async (req, res) => {
   const b = req.body;
   const events = {};
   for (const key of LOG_EVENTS) events[key] = bool(b['ev_' + key]);
+  const channels = {};
+  for (const cat of LOG_CATEGORIES) channels[cat] = (b['ch_' + cat] || '').trim() || null;
   await db.updateSettings(req.guild.id, {
-    logging: { enabled: bool(b.logging_enabled), channelId: b.logChannelId || null, events }
+    logging: { enabled: bool(b.logging_enabled), channelId: b.logChannelId || null, channels, events }
   });
   res.redirect(`/dashboard/${req.guild.id}?saved=logging#logging`);
 });
@@ -258,6 +262,7 @@ router.post('/reactionroles', async (req, res) => {
   const b = req.body;
   const channelId = (b.channelId || '').trim();
   const message = b.message || 'Выбери роль реакцией ниже';
+  const maxRoles = Math.max(0, parseInt(b.maxRoles, 10) || 0);
   const emojis = arr(b.emoji);
   const roles = arr(b.role);
 
@@ -280,7 +285,7 @@ router.post('/reactionroles', async (req, res) => {
     for (const p of pairs) {
       const pe = discord.parseEmoji(p.emoji);
       await discord.addReaction(channelId, msg.id, pe.reaction);
-      await db.addReactionRole(req.guild.id, msg.id, pe.key, p.role);
+      await db.addReactionRole(req.guild.id, msg.id, pe.key, p.role, maxRoles);
       await new Promise((r) => setTimeout(r, 300)); // мягко к rate-limit
     }
     res.redirect(`/dashboard/${req.guild.id}?saved=reactionroles#reactionroles`);

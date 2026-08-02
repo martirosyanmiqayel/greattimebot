@@ -61,13 +61,24 @@ function defaultSettings() {
     },
     logging: {
       enabled: false,
-      channelId: null,
+      channelId: null,           // общий канал (fallback, если для категории не задан свой)
+      // Отдельные каналы по категориям. Пусто → используется общий channelId.
+      channels: {
+        messages: null,          // удаление/редактирование сообщений
+        members: null,           // входы/выходы участников
+        roles: null,             // создание/удаление/изменение ролей
+        voice: null,             // заход/выход/переход в голосовых
+        moderation: null,        // баны/кики/разбаны (из аудита)
+        tickets: null,           // открытие/закрытие тикетов
+        server: null             // каналы/сервер/вебхуки
+      },
       events: {
         messageDelete: true, messageEdit: true, memberJoin: true, memberLeave: true,
         channelCreate: true, channelDelete: true, channelUpdate: true,
         roleCreate: true, roleDelete: true, roleUpdate: true,
         memberBan: true, memberUnban: true, memberKick: true,
-        webhookUpdate: true, guildUpdate: true
+        webhookUpdate: true, guildUpdate: true,
+        voice: true, ticketOpen: true, ticketClose: true
       }
     },
     // XP / уровни. Все значения меняются через дашборд или !config.
@@ -228,11 +239,17 @@ async function findOpenTicket(g, u) {
 }
 
 // ---- Reaction roles ----
-async function addReactionRole(g, m, e, r) {
+async function addReactionRole(g, m, e, r, maxRoles = 0) {
   const { data, error } = await supabase.from('reaction_roles')
-    .insert({ guild_id: g, message_id: m, emoji: e, role_id: r }).select('id').single();
+    .insert({ guild_id: g, message_id: m, emoji: e, role_id: r, max_roles: maxRoles || 0 }).select('id').single();
   if (error) console.error('[db] addReactionRole:', error.message);
   return data ? data.id : null;
+}
+/** Все привязки одного сообщения (для лимита ролей на панель). */
+async function listReactionRolesForMessage(m) {
+  const { data, error } = await supabase.from('reaction_roles').select('*').eq('message_id', m);
+  if (error) console.error('[db] listReactionRolesForMessage:', error.message);
+  return data || [];
 }
 async function findReactionRole(m, e) {
   const { data, error } = await supabase.from('reaction_roles').select('*')
@@ -460,7 +477,7 @@ module.exports = {
   addCustomCommand, removeCustomCommand, getCustomCommand, listCustomCommands,
   addWarning, getWarnings, clearWarnings,
   openTicket, closeTicket, findOpenTicket,
-  addReactionRole, findReactionRole, listReactionRoles, deleteReactionRole,
+  addReactionRole, findReactionRole, listReactionRoles, listReactionRolesForMessage, deleteReactionRole,
   // XP
   getXp, addXpDelta, setXpValue, topXp, getXpRank, setXpFormula, xpToLevel, levelToXp,
   // Whitelist
