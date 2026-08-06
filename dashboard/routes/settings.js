@@ -165,6 +165,7 @@ router.post('/anticrash', async (req, res) => {
       stripRoles: bool(b.stripRoles),
       alertOwner: bool(b.alertOwner),
       alertWhitelist: bool(b.alertWhitelist),
+      exemptStaffRoles: bool(b.exemptStaffRoles),
       punishment,
       punishTimeoutHours: parseInt(b.punishTimeoutHours, 10) || 3,
       whitelistRoleIds: lines(b.whitelistRoleIds),
@@ -209,7 +210,24 @@ router.post('/backup/delete', async (req, res) => {
 router.post('/staff', async (req, res) => {
   const b = req.body;
   const mode = ['either', 'roleOnly'].includes(b.mode) ? b.mode : 'either';
-  await db.updateSettings(req.guild.id, { staff: { roleIds: lines(b.roleIds), mode } });
+  // Персональные кулдауны по ролям: параллельные массивы cd_role[] и cd_sec[].
+  const cdRoles = arr(b.cd_role);
+  const cdSecs = arr(b.cd_sec);
+  const roleCooldowns = [];
+  for (let i = 0; i < cdRoles.length; i++) {
+    const roleId = (cdRoles[i] || '').trim();
+    const seconds = parseInt(cdSecs[i], 10);
+    if (roleId && !Number.isNaN(seconds) && seconds >= 0) roleCooldowns.push({ roleId, seconds });
+  }
+  await db.updateSettings(req.guild.id, {
+    staff: {
+      roleIds: lines(b.roleIds),
+      mode,
+      commandChannels: lines(b.commandChannels),
+      cooldownSec: Math.max(0, parseInt(b.cooldownSec, 10) || 0),
+      roleCooldowns
+    }
+  });
   res.redirect(`/dashboard/${req.guild.id}?saved=staff#staff`);
 });
 

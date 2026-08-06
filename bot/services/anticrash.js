@@ -67,7 +67,11 @@ function bumpRate(guildId, userId, key, cfg) {
 
 async function isTrusted(guild, settings, userId) {
   if (await db.whitelistHas(guild.id, userId)) return true;
-  const roleIds = settings.anticrash.whitelistRoleIds || [];
+  const roleIds = [...(settings.anticrash.whitelistRoleIds || [])];
+  // Опционально: стафф-роли тоже считаются доверенными.
+  if (settings.anticrash.exemptStaffRoles && settings.staff && Array.isArray(settings.staff.roleIds)) {
+    roleIds.push(...settings.staff.roleIds);
+  }
   if (!roleIds.length) return false;
   const member = await guild.members.fetch(userId).catch(() => null);
   return !!(member && member.roles.cache.some((r) => roleIds.includes(r.id)));

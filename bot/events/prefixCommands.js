@@ -48,7 +48,7 @@ module.exports = {
     }
 
     const msg = settings.messages || {};
-    // Проверка прав: стафф-роли + права Discord (владелец/админ всегда проходят).
+    // Проверки для стафф-команд: права, разрешённый канал, кулдаун.
     if (command.permission || command.adminOnly) {
       if (!staff.passes(message.member, settings, command.permission || null, !!command.adminOnly)) {
         const text = command.adminOnly
@@ -56,6 +56,13 @@ module.exports = {
           : (msg.noPermission || '⛔ Недостаточно прав для этой команды.');
         return message.channel.send(text).catch(() => {});
       }
+      if (!staff.channelAllowed(message.member, settings, message.channel.id)) {
+        const chans = (settings.staff.commandChannels || []).map((c) => `<#${c}>`).join(', ');
+        return message.channel.send(`⛔ Стафф-команды работают только в: ${chans}`).catch(() => {});
+      }
+      const remain = staff.cooldownRemaining(message.member, settings, name);
+      if (remain > 0) return message.channel.send(`⏳ Подожди **${remain} сек** перед повторным использованием.`).catch(() => {});
+      staff.markCooldown(message.member, name);
     }
 
     const ctx = makePrefixContext(message, parts, settings);

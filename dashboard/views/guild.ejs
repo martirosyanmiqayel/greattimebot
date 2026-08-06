@@ -98,6 +98,9 @@
             </div>
             <small class="muted">При каждом срабатывании в ЛС приходит отчёт (кто, что сделал, что бот предпринял) — владельцу и/или всем доверенным из whitelist, как получает владелец.</small>
 
+            <label class="switch"><input type="checkbox" name="exemptStaffRoles" <%= settings.anticrash.exemptStaffRoles ? 'checked' : '' %> /> Не трогать стафф-роли (из раздела 👮 Стафф-роли)</label>
+            <small class="muted">Если включено — участники со стафф-ролями считаются доверенными и Anti-Crash их не наказывает (лимиты ниже и запрет на добавление ботов всё равно действуют).</small>
+
             <label>Доверенные роли (whitelist по ролям), ID по одной на строку<textarea name="whitelistRoleIds" rows="2"><%= (settings.anticrash.whitelistRoleIds || []).join('\n') %></textarea><small>Участники с этими ролями игнорируются (кроме превышения лимитов ниже). Отдельных людей добавляй в whitelist внизу страницы.</small></label>
 
             <fieldset>
@@ -259,7 +262,28 @@
               </select>
               <small><b>Мягко</b> — пускает и тех, у кого есть роль, и тех, у кого есть соответствующее право Discord. <b>Строго</b> — доступ ТОЛЬКО у обладателей стафф-роли (админ/владелец всё равно проходят).</small>
             </label>
-            <button class="btn" type="submit">Сохранить стафф-роли</button>
+
+            <fieldset>
+              <legend>Каналы для стафф-команд</legend>
+              <label>ID каналов (по одному на строку) — пусто = команды работают везде<textarea name="commandChannels" rows="2"><%= (settings.staff.commandChannels || []).join('\n') %></textarea><small>Мут/бан/варн и другие стафф-команды будут работать <b>только</b> в этих каналах. Владелец сервера — без ограничения.</small></label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Кулдаун на стафф-команды</legend>
+              <label>Общий кулдаун (сек, 0 = выкл)<input type="number" name="cooldownSec" min="0" value="<%= settings.staff.cooldownSec || 0 %>" /><small>На каждого стаффа, на каждую команду. Например 5 — не чаще раза в 5 секунд.</small></label>
+              <div class="dyn-rows" data-dyn="cd">
+                <% var rc = settings.staff.roleCooldowns || []; var rcn = Math.max(rc.length + 1, 2); for (var i = 0; i < rcn; i++) { var row = rc[i] || {}; %>
+                  <div class="grid2 dyn-row">
+                    <label>Роль (ID) — свой кулдаун<input type="text" name="cd_role" value="<%= row.roleId || '' %>" /></label>
+                    <label>Кулдаун (сек)<input type="number" name="cd_sec" min="0" value="<%= (row.seconds !== undefined ? row.seconds : '') %>" /></label>
+                  </div>
+                <% } %>
+              </div>
+              <button type="button" class="btn ghost small" data-add="cd">+ ещё роль</button>
+              <small class="muted">Персональный кулдаун по роли перекрывает общий. Если у человека несколько таких ролей — берётся наименьший.</small>
+            </fieldset>
+
+            <button class="btn" type="submit">Сохранить стафф-настройки</button>
           </form>
           <p class="muted hint">Работает для <code>!</code>-команд полностью. Для <code>/</code>-команд Discord ещё и сам скрывает их по правам — чтобы стафф-роль без прав Discord видела слэш-команды, дай этой роли нужные права в Discord или пользуйся <code>!</code>-командами.</p>
         </section>

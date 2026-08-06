@@ -107,6 +107,7 @@ function defaultSettings() {
       stripRoles: true,            // снять все роли нарушителю
       alertOwner: true,            // писать владельцу сервера в ЛС при срабатывании
       alertWhitelist: true,        // писать всем из whitelist в ЛС при срабатывании
+      exemptStaffRoles: false,     // считать стафф-роли доверенными (не трогать Anti-Crash'ем)
       // Дополнительные роли-исключения (кроме таблицы whitelist).
       whitelistRoleIds: [],
       // Какие действия отслеживать.
@@ -132,7 +133,10 @@ function defaultSettings() {
     // mode: 'either' (роль ИЛИ право Discord) | 'roleOnly' (только по роли).
     staff: {
       roleIds: [],
-      mode: 'either'
+      mode: 'either',
+      commandChannels: [],   // если не пусто — стафф-команды работают ТОЛЬКО в этих каналах
+      cooldownSec: 0,        // общий кулдаун на стафф-команду (на пользователя, на команду)
+      roleCooldowns: []      // персональный кулдаун по ролям: [{ roleId, seconds }]
     },
     // Редактируемые тексты ответов бота (общие для команд). Placeholders: {user}
     messages: {
