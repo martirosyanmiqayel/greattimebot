@@ -210,14 +210,16 @@ router.post('/backup/delete', async (req, res) => {
 router.post('/staff', async (req, res) => {
   const b = req.body;
   const mode = ['either', 'roleOnly'].includes(b.mode) ? b.mode : 'either';
-  // Персональные кулдауны по ролям: параллельные массивы cd_role[] и cd_sec[].
-  const cdRoles = arr(b.cd_role);
-  const cdSecs = arr(b.cd_sec);
-  const roleCooldowns = [];
-  for (let i = 0; i < cdRoles.length; i++) {
-    const roleId = (cdRoles[i] || '').trim();
-    const seconds = parseInt(cdSecs[i], 10);
-    if (roleId && !Number.isNaN(seconds) && seconds >= 0) roleCooldowns.push({ roleId, seconds });
+  // Правила роль→команда→кулдаун: параллельные массивы cr_role[], cr_cmd[], cr_sec[].
+  const crRoles = arr(b.cr_role);
+  const crCmds = arr(b.cr_cmd);
+  const crSecs = arr(b.cr_sec);
+  const commandRules = [];
+  for (let i = 0; i < crRoles.length; i++) {
+    const roleId = (crRoles[i] || '').trim();
+    const command = (crCmds[i] || '').trim();
+    const seconds = Math.max(0, parseInt(crSecs[i], 10) || 0);
+    if (roleId && command) commandRules.push({ roleId, command, seconds });
   }
   await db.updateSettings(req.guild.id, {
     staff: {
@@ -225,7 +227,7 @@ router.post('/staff', async (req, res) => {
       mode,
       commandChannels: lines(b.commandChannels),
       cooldownSec: Math.max(0, parseInt(b.cooldownSec, 10) || 0),
-      roleCooldowns
+      commandRules
     }
   });
   res.redirect(`/dashboard/${req.guild.id}?saved=staff#staff`);

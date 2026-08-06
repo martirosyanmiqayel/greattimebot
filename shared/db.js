@@ -136,7 +136,9 @@ function defaultSettings() {
       mode: 'either',
       commandChannels: [],   // если не пусто — стафф-команды работают ТОЛЬКО в этих каналах
       cooldownSec: 0,        // общий кулдаун на стафф-команду (на пользователя, на команду)
-      roleCooldowns: []      // персональный кулдаун по ролям: [{ roleId, seconds }]
+      roleCooldowns: [],     // общий кулдаун по ролям (легаси): [{ roleId, seconds }]
+      // Правила роль→команда: роль ограничена этими командами, у каждой свой кулдаун.
+      commandRules: []       // [{ roleId, command, seconds }]
     },
     // Редактируемые тексты ответов бота (общие для команд). Placeholders: {user}
     messages: {

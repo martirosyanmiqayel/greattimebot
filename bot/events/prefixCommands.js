@@ -50,7 +50,7 @@ module.exports = {
     const msg = settings.messages || {};
     // Проверки для стафф-команд: права, разрешённый канал, кулдаун.
     if (command.permission || command.adminOnly) {
-      if (!staff.passes(message.member, settings, command.permission || null, !!command.adminOnly)) {
+      if (!staff.passes(message.member, settings, command.permission || null, !!command.adminOnly, command.name)) {
         const text = command.adminOnly
           ? (msg.adminOnly || '⛔ Команда только для администраторов.')
           : (msg.noPermission || '⛔ Недостаточно прав для этой команды.');
@@ -60,9 +60,9 @@ module.exports = {
         const chans = (settings.staff.commandChannels || []).map((c) => `<#${c}>`).join(', ');
         return message.channel.send(`⛔ Стафф-команды работают только в: ${chans}`).catch(() => {});
       }
-      const remain = staff.cooldownRemaining(message.member, settings, name);
+      const remain = staff.cooldownRemaining(message.member, settings, command.name);
       if (remain > 0) return message.channel.send(`⏳ Подожди **${remain} сек** перед повторным использованием.`).catch(() => {});
-      staff.markCooldown(message.member, name);
+      staff.markCooldown(message.member, command.name);
     }
 
     const ctx = makePrefixContext(message, parts, settings);

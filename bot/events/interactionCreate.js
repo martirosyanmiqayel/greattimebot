@@ -25,7 +25,7 @@ module.exports = {
         try { dmp = command.data.toJSON().default_member_permissions; } catch { /* нет ограничения */ }
         if (dmp) {
           const settings = await db.getSettings(interaction.guild.id);
-          if (!staff.passes(interaction.member, settings, BigInt(dmp), false)) {
+          if (!staff.passes(interaction.member, settings, BigInt(dmp), false, interaction.commandName)) {
             return interaction.reply({ content: settings.messages.noPermission || '⛔ Недостаточно прав для этой команды.', ephemeral: true }).catch(() => {});
           }
           if (!staff.channelAllowed(interaction.member, settings, interaction.channelId)) {

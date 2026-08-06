@@ -268,19 +268,26 @@
               <label>ID каналов (по одному на строку) — пусто = команды работают везде<textarea name="commandChannels" rows="2"><%= (settings.staff.commandChannels || []).join('\n') %></textarea><small>Мут/бан/варн и другие стафф-команды будут работать <b>только</b> в этих каналах. Владелец сервера — без ограничения.</small></label>
             </fieldset>
 
+            <label>Общий кулдаун стафф-команд (сек, 0 = выкл)<input type="number" name="cooldownSec" min="0" value="<%= settings.staff.cooldownSec || 0 %>" /><small>Базовый кулдаун на каждую стафф-команду для всех, если для роли/команды ниже не задан свой.</small></label>
+
             <fieldset>
-              <legend>Кулдаун на стафф-команды</legend>
-              <label>Общий кулдаун (сек, 0 = выкл)<input type="number" name="cooldownSec" min="0" value="<%= settings.staff.cooldownSec || 0 %>" /><small>На каждого стаффа, на каждую команду. Например 5 — не чаще раза в 5 секунд.</small></label>
-              <div class="dyn-rows" data-dyn="cd">
-                <% var rc = settings.staff.roleCooldowns || []; var rcn = Math.max(rc.length + 1, 2); for (var i = 0; i < rcn; i++) { var row = rc[i] || {}; %>
-                  <div class="grid2 dyn-row">
-                    <label>Роль (ID) — свой кулдаун<input type="text" name="cd_role" value="<%= row.roleId || '' %>" /></label>
-                    <label>Кулдаун (сек)<input type="number" name="cd_sec" min="0" value="<%= (row.seconds !== undefined ? row.seconds : '') %>" /></label>
+              <legend>Права и кулдаун по ролям: роль → команда → кулдаун</legend>
+              <small class="muted">Добавь строки: роль + команда + кулдаун (в секундах). Роль, для которой заданы строки, сможет использовать <b>только перечисленные команды</b>, и у каждой — свой кулдаун. Пример: роль Junior → <code>mute</code> = 300 (5 мин), та же роль → <code>ban</code> = 900 (15 мин). Кулдаун 0 = без задержки. Для роли с полным доступом ко всем командам используй список стафф-ролей выше.</small>
+              <div class="dyn-rows" data-dyn="cr">
+                <% var cr = settings.staff.commandRules || []; var crn = Math.max(cr.length + 1, 2); var CMDS = ['ban','unban','mute','unmute','kick','warn','warns','unwarn','checkmute','history','purge','lock','unlock','slowmode','role','nick','staffstats']; for (var i = 0; i < crn; i++) { var row = cr[i] || {}; %>
+                  <div class="grid3 dyn-row">
+                    <label>Роль (ID)<input type="text" name="cr_role" value="<%= row.roleId || '' %>" /></label>
+                    <label>Команда
+                      <select name="cr_cmd">
+                        <option value="">—</option>
+                        <% CMDS.forEach(function(c){ %><option value="<%= c %>" <%= row.command === c ? 'selected' : '' %>><%= c %></option><% }) %>
+                      </select>
+                    </label>
+                    <label>Кулдаун (сек)<input type="number" name="cr_sec" min="0" value="<%= (row.seconds !== undefined ? row.seconds : '') %>" /></label>
                   </div>
                 <% } %>
               </div>
-              <button type="button" class="btn ghost small" data-add="cd">+ ещё роль</button>
-              <small class="muted">Персональный кулдаун по роли перекрывает общий. Если у человека несколько таких ролей — берётся наименьший.</small>
+              <button type="button" class="btn ghost small" data-add="cr">+ ещё правило</button>
             </fieldset>
 
             <button class="btn" type="submit">Сохранить стафф-настройки</button>
