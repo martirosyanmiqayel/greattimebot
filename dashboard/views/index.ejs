@@ -1,45 +1,48 @@
 <%- include('partials/head', { title: 'GreatTime Bot' }) %>
 
-<section class="landing-hero">
-  <div class="hero-copy">
-    <span class="eyebrow">GreatTime • Discord Bot</span>
-    <h1>Твой сервер —<br><span class="accent">на новом уровне</span></h1>
-    <p class="lead">
-      Anti-Crash защита, XP и уровни, модерация, бэкапы, логи и тикеты —
-      всё в одной панели. Красиво, быстро, без правки кода.
-    </p>
-    <div class="hero-actions">
-      <% if (inviteUrl) { %>
-        <a class="btn big" href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить в Discord</a>
-      <% } else { %>
-        <a class="btn big" href="/login">Войти через Discord</a>
-      <% } %>
-      <a class="btn big ghost" href="/commands">Смотреть команды</a>
-    </div>
-    <div class="hero-stats">
-      <div><b>45+</b><span>команд</span></div>
-      <div><b>/ и !</b><span>оба режима</span></div>
-      <div><b>24/7</b><span>онлайн</span></div>
-    </div>
+<section class="hero">
+  <div class="emblem">
+    <div class="ring"></div>
+    <div class="gt">GT</div>
+    <span class="diamond t"></span><span class="diamond b"></span>
+    <span class="diamond l"></span><span class="diamond r"></span>
+    <div class="orbit"><span class="spark"></span></div>
   </div>
 
-  <div class="hero-visual">
-    <div class="orb" id="orb"></div>
-    <div class="particles"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <span class="eyebrow">GreatTime • Discord Bot</span>
+  <h1>Раскали свой сервер<br>с <span class="accent">GreatTime</span></h1>
+  <p class="lead">
+    Anti-Crash защита, XP и уровни, модерация, бэкапы, логи, тикеты и вебхуки —
+    вся мощь в одной раскалённой панели.
+  </p>
+  <div class="hero-actions">
+    <% if (inviteUrl) { %>
+      <a class="btn big" href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить в Discord</a>
+    <% } else { %>
+      <a class="btn big" href="/login">Войти через Discord</a>
+    <% } %>
+    <a class="btn big ghost" href="/commands">Смотреть команды</a>
   </div>
+  <div class="hero-stats">
+    <div><b>45+</b><span>команд</span></div>
+    <div><b>/ и !</b><span>оба режима</span></div>
+    <div><b>24/7</b><span>онлайн</span></div>
+  </div>
+
+  <div class="particles"><i></i><i></i><i></i><i></i><i></i><i></i></div>
 </section>
 
 <section class="section" id="features">
   <div class="section-head">
     <span class="eyebrow">Возможности</span>
-    <h2>Всё для сервера — в одном боте</h2>
+    <h2>Вся мощь — в одном боте</h2>
     <p class="lead">Каждая функция включается на дашборде. Бот подхватывает изменения сразу.</p>
   </div>
   <div class="features">
     <div class="card"><div class="card-ic">🛡️</div><h3>Anti-Crash</h3><p>Анти-нюк: снятие ролей, timeout/бан и авто-откат удалённого через аудит-лог.</p></div>
     <div class="card"><div class="card-ic">💾</div><h3>Backup</h3><p>Авто-снимок структуры сервера и восстановление одной командой.</p></div>
     <div class="card"><div class="card-ic">⭐</div><h3>XP и уровни</h3><p>Опыт за сообщения и голосовые, топ, роли-награды за уровни.</p></div>
-    <div class="card"><div class="card-ic">🔨</div><h3>Модерация</h3><p>Временные баны/муты, история наказаний, стафф-роли и кулдауны.</p></div>
+    <div class="card"><div class="card-ic">🔨</div><h3>Модерация</h3><p>Временные баны/муты, история, стафф-роли, каналы и кулдауны команд.</p></div>
     <div class="card"><div class="card-ic">🎫</div><h3>Тикеты</h3><p>Меню выбора типа обращения, свой текст на каждый тип, приватные каналы.</p></div>
     <div class="card"><div class="card-ic">📜</div><h3>Логи</h3><p>Отдельные каналы под роли, войс, модерацию, участников и тикеты.</p></div>
     <div class="card"><div class="card-ic">🪝</div><h3>Вебхуки</h3><p>Отправка сообщений с кастомным именем и аватаром прямо из панели.</p></div>
@@ -49,7 +52,7 @@
 </section>
 
 <section class="cta-banner">
-  <h2>Готов прокачать сервер?</h2>
+  <h2>Разжечь сервер?</h2>
   <p class="lead">Добавь бота и настрой всё за пару минут.</p>
   <div class="hero-actions" style="justify-content:center;">
     <% if (inviteUrl) { %><a class="btn big" href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить в Discord</a><% } %>
@@ -58,18 +61,18 @@
 </section>
 
 <script>
-  // 3D-наклон орба за курсором + мягкий возврат.
+  // 3D-наклон эмблемы за курсором.
   (function () {
-    var orb = document.getElementById('orb');
-    var hero = document.querySelector('.hero-visual');
-    if (!orb || !hero || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var em = document.querySelector('.emblem');
+    if (!em || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var hero = em.closest('.hero');
     hero.addEventListener('mousemove', function (e) {
       var r = hero.getBoundingClientRect();
       var x = (e.clientX - r.left) / r.width - 0.5;
       var y = (e.clientY - r.top) / r.height - 0.5;
-      orb.style.transform = 'rotateY(' + (x * 26) + 'deg) rotateX(' + (-y * 26) + 'deg) translateZ(20px)';
+      em.style.transform = 'perspective(700px) rotateY(' + (x * 16) + 'deg) rotateX(' + (-y * 16) + 'deg)';
     });
-    hero.addEventListener('mouseleave', function () { orb.style.transform = ''; });
+    hero.addEventListener('mouseleave', function () { em.style.transform = ''; });
   })();
 </script>
 
