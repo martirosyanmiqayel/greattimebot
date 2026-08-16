@@ -1,26 +1,31 @@
 <%- include('partials/head', { title: 'GreatTime Bot' }) %>
 
-<section class="hero">
-  <span class="eyebrow">GreatTime • Discord Bot</span>
-  <h1>Выведи свой сервер<br>на <span class="accent">новый уровень</span></h1>
-  <p class="lead">
-    Мощный Discord-бот: Anti-Crash защита, XP и уровни, модерация,
-    бэкапы, логи и тикеты — всё настраивается в веб-панели, без правки кода.
-  </p>
-  <div class="hero-actions">
-    <% if (inviteUrl) { %>
-      <a class="btn big" href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить в Discord</a>
-    <% } else { %>
-      <a class="btn big" href="/login">Войти через Discord</a>
-    <% } %>
-    <a class="btn big ghost" href="/commands">Смотреть команды</a>
-    <% if (user) { %><a class="btn big ghost" href="/dashboard">Мои серверы →</a><% } %>
+<section class="landing-hero">
+  <div class="hero-copy">
+    <span class="eyebrow">GreatTime • Discord Bot</span>
+    <h1>Твой сервер —<br><span class="accent">на новом уровне</span></h1>
+    <p class="lead">
+      Anti-Crash защита, XP и уровни, модерация, бэкапы, логи и тикеты —
+      всё в одной панели. Красиво, быстро, без правки кода.
+    </p>
+    <div class="hero-actions">
+      <% if (inviteUrl) { %>
+        <a class="btn big" href="<%= inviteUrl %>" target="_blank" rel="noopener">Добавить в Discord</a>
+      <% } else { %>
+        <a class="btn big" href="/login">Войти через Discord</a>
+      <% } %>
+      <a class="btn big ghost" href="/commands">Смотреть команды</a>
+    </div>
+    <div class="hero-stats">
+      <div><b>45+</b><span>команд</span></div>
+      <div><b>/ и !</b><span>оба режима</span></div>
+      <div><b>24/7</b><span>онлайн</span></div>
+    </div>
   </div>
-  <div class="hero-stats">
-    <div><b>45+</b><span>команд</span></div>
-    <div><b>/ и !</b><span>оба режима</span></div>
-    <div><b>24/7</b><span>онлайн</span></div>
-    <div><b>0</b><span>сторонних ботов</span></div>
+
+  <div class="hero-visual">
+    <div class="orb" id="orb"></div>
+    <div class="particles"><i></i><i></i><i></i><i></i><i></i><i></i></div>
   </div>
 </section>
 
@@ -28,17 +33,17 @@
   <div class="section-head">
     <span class="eyebrow">Возможности</span>
     <h2>Всё для сервера — в одном боте</h2>
-    <p class="lead">Каждая функция включается и настраивается на дашборде. Бот подхватывает изменения сразу, без перезапуска.</p>
+    <p class="lead">Каждая функция включается на дашборде. Бот подхватывает изменения сразу.</p>
   </div>
   <div class="features">
-    <div class="card"><div class="card-ic">🛡️</div><h3>Anti-Crash</h3><p>Защита от рейда персонала: снятие ролей, timeout и авто-откат удалённого через аудит-лог.</p></div>
+    <div class="card"><div class="card-ic">🛡️</div><h3>Anti-Crash</h3><p>Анти-нюк: снятие ролей, timeout/бан и авто-откат удалённого через аудит-лог.</p></div>
     <div class="card"><div class="card-ic">💾</div><h3>Backup</h3><p>Авто-снимок структуры сервера и восстановление одной командой.</p></div>
     <div class="card"><div class="card-ic">⭐</div><h3>XP и уровни</h3><p>Опыт за сообщения и голосовые, топ, роли-награды за уровни.</p></div>
-    <div class="card"><div class="card-ic">🔨</div><h3>Модерация</h3><p>Временные баны/муты, история наказаний, варны, чистка чата.</p></div>
-    <div class="card"><div class="card-ic">🤖</div><h3>Автомод</h3><p>Фильтр слов, ссылок, инвайтов и массовых упоминаний.</p></div>
-    <div class="card"><div class="card-ic">🎭</div><h3>Reaction-роли</h3><p>Роли по клику на эмодзи под сообщением.</p></div>
-    <div class="card"><div class="card-ic">🎫</div><h3>Тикеты</h3><p>Кнопка поддержки, приватные каналы, закрытие в один клик.</p></div>
-    <div class="card"><div class="card-ic">📜</div><h3>Логи</h3><p>Кто/что/когда: каналы, роли, баны, вебхуки + отдельный канал Anti-Crash.</p></div>
+    <div class="card"><div class="card-ic">🔨</div><h3>Модерация</h3><p>Временные баны/муты, история наказаний, стафф-роли и кулдауны.</p></div>
+    <div class="card"><div class="card-ic">🎫</div><h3>Тикеты</h3><p>Меню выбора типа обращения, свой текст на каждый тип, приватные каналы.</p></div>
+    <div class="card"><div class="card-ic">📜</div><h3>Логи</h3><p>Отдельные каналы под роли, войс, модерацию, участников и тикеты.</p></div>
+    <div class="card"><div class="card-ic">🪝</div><h3>Вебхуки</h3><p>Отправка сообщений с кастомным именем и аватаром прямо из панели.</p></div>
+    <div class="card"><div class="card-ic">🎭</div><h3>Reaction-роли</h3><p>Роли по реакции с лимитом на пост и авто-снятием.</p></div>
     <div class="card"><div class="card-ic">🧩</div><h3>Свои команды</h3><p>Кастомные команды с любым текстом ответа — прямо в панели.</p></div>
   </div>
 </section>
@@ -51,5 +56,21 @@
     <% if (user) { %><a class="btn big ghost" href="/dashboard">Мои серверы →</a><% } else { %><a class="btn big ghost" href="/login">Войти</a><% } %>
   </div>
 </section>
+
+<script>
+  // 3D-наклон орба за курсором + мягкий возврат.
+  (function () {
+    var orb = document.getElementById('orb');
+    var hero = document.querySelector('.hero-visual');
+    if (!orb || !hero || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    hero.addEventListener('mousemove', function (e) {
+      var r = hero.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width - 0.5;
+      var y = (e.clientY - r.top) / r.height - 0.5;
+      orb.style.transform = 'rotateY(' + (x * 26) + 'deg) rotateX(' + (-y * 26) + 'deg) translateZ(20px)';
+    });
+    hero.addEventListener('mouseleave', function () { orb.style.transform = ''; });
+  })();
+</script>
 
 <%- include('partials/foot') %>
