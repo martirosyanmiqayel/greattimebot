@@ -7,6 +7,18 @@
  */
 
 const { PermissionFlagsBits } = require('discord.js');
+const db = require('../../shared/db');
+
+/**
+ * В whitelist ли участник (таблица whitelist или роли-исключения Anti-Crash).
+ * Такие люди используют стафф-команды без ограничения по каналу и без кулдауна.
+ */
+async function isWhitelisted(guild, settings, member) {
+  if (!member) return false;
+  if (await db.whitelistHas(guild.id, member.id)) return true;
+  const roleIds = (settings.anticrash && settings.anticrash.whitelistRoleIds) || [];
+  return roleIds.length > 0 && member.roles.cache.some((r) => roleIds.includes(r.id));
+}
 
 /**
  * passes(member, settings, requiredPerm, adminOnly) -> boolean
@@ -98,4 +110,4 @@ function markCooldown(member, cmdName) {
   cooldowns.set(`${member.guild.id}:${member.id}:${cmdName}`, Date.now());
 }
 
-module.exports = { passes, channelAllowed, cooldownFor, cooldownRemaining, markCooldown };
+module.exports = { passes, isWhitelisted, channelAllowed, cooldownFor, cooldownRemaining, markCooldown };

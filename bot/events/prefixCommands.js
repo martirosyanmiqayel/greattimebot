@@ -56,13 +56,17 @@ module.exports = {
           : (msg.noPermission || '⛔ Недостаточно прав для этой команды.');
         return message.channel.send(text).catch(() => {});
       }
-      if (!staff.channelAllowed(message.member, settings, message.channel.id)) {
-        const chans = (settings.staff.commandChannels || []).map((c) => `<#${c}>`).join(', ');
-        return message.channel.send(`⛔ Стафф-команды работают только в: ${chans}`).catch(() => {});
+      // Люди из whitelist используют стафф-команды везде и без кулдауна.
+      const whitelisted = await staff.isWhitelisted(message.guild, settings, message.member);
+      if (!whitelisted) {
+        if (!staff.channelAllowed(message.member, settings, message.channel.id)) {
+          const chans = (settings.staff.commandChannels || []).map((c) => `<#${c}>`).join(', ');
+          return message.channel.send(`⛔ Стафф-команды работают только в: ${chans}`).catch(() => {});
+        }
+        const remain = staff.cooldownRemaining(message.member, settings, command.name);
+        if (remain > 0) return message.channel.send(`⏳ Подожди **${remain} сек** перед повторным использованием.`).catch(() => {});
+        staff.markCooldown(message.member, command.name);
       }
-      const remain = staff.cooldownRemaining(message.member, settings, command.name);
-      if (remain > 0) return message.channel.send(`⏳ Подожди **${remain} сек** перед повторным использованием.`).catch(() => {});
-      staff.markCooldown(message.member, command.name);
     }
 
     const ctx = makePrefixContext(message, parts, settings);

@@ -28,13 +28,17 @@ module.exports = {
           if (!staff.passes(interaction.member, settings, BigInt(dmp), false, interaction.commandName)) {
             return interaction.reply({ content: settings.messages.noPermission || '⛔ Недостаточно прав для этой команды.', ephemeral: true }).catch(() => {});
           }
-          if (!staff.channelAllowed(interaction.member, settings, interaction.channelId)) {
-            const chans = (settings.staff.commandChannels || []).map((c) => `<#${c}>`).join(', ');
-            return interaction.reply({ content: `⛔ Стафф-команды работают только в: ${chans}`, ephemeral: true }).catch(() => {});
+          // Люди из whitelist используют стафф-команды везде и без кулдауна.
+          const whitelisted = await staff.isWhitelisted(interaction.guild, settings, interaction.member);
+          if (!whitelisted) {
+            if (!staff.channelAllowed(interaction.member, settings, interaction.channelId)) {
+              const chans = (settings.staff.commandChannels || []).map((c) => `<#${c}>`).join(', ');
+              return interaction.reply({ content: `⛔ Стафф-команды работают только в: ${chans}`, ephemeral: true }).catch(() => {});
+            }
+            const remain = staff.cooldownRemaining(interaction.member, settings, interaction.commandName);
+            if (remain > 0) return interaction.reply({ content: `⏳ Подожди ${remain} сек перед повторным использованием.`, ephemeral: true }).catch(() => {});
+            staff.markCooldown(interaction.member, interaction.commandName);
           }
-          const remain = staff.cooldownRemaining(interaction.member, settings, interaction.commandName);
-          if (remain > 0) return interaction.reply({ content: `⏳ Подожди ${remain} сек перед повторным использованием.`, ephemeral: true }).catch(() => {});
-          staff.markCooldown(interaction.member, interaction.commandName);
         }
       }
 
