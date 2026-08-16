@@ -37,7 +37,7 @@
         ['staff','👮','Стафф-роли'],
         ['moderation','🔨','Модерация'], ['welcome','👋','Приветствия'], ['autorole','🎭','Автороли'],
         ['reactionroles','✨','Reaction-роли'], ['customcommands','🧩','Свои команды'], ['messages','💬','Тексты'],
-        ['logging','📜','Логи'], ['tickets','🎫','Тикеты']
+        ['webhook','🪝','Вебхук'], ['logging','📜','Логи'], ['tickets','🎫','Тикеты']
       ].forEach(function(it, i){ %>
         <button class="side-item <%= i === 0 ? 'active' : '' %>" data-nav="<%= it[0] %>"><span class="ic"><%= it[1] %></span> <%= it[2] %></button>
       <% }) %>
@@ -463,6 +463,28 @@
         </section>
       </div>
 
+      <!-- ВЕБХУК -->
+      <div class="dash-panel" data-panel="webhook">
+        <section class="module" id="webhook">
+          <h2>🪝 Отправка через вебхук</h2>
+          <p class="muted">Бот отправит сообщение в канал через вебхук — можно задать <b>своё имя и аватар</b> отправителя. Нужно право бота «Управление вебхуками».</p>
+          <% if (saved === 'webhook') { %><div class="notice success">Сообщение отправлено ✓</div><% } %>
+          <% if (saved === 'wh_error') { %><div class="notice warn">Не удалось отправить. Проверь ID канала и права бота (Управление вебхуками).</div><% } %>
+          <form method="POST" action="/dashboard/<%= guild.id %>/webhook-send">
+            <div class="grid2">
+              <label>Канал (ID)<input type="text" name="channelId" placeholder="123456789012345678" required /></label>
+              <label>Имя отправителя (опц.)<input type="text" name="name" placeholder="Объявления" /></label>
+            </div>
+            <label>URL аватара (опц.)<input type="text" name="avatar" placeholder="https://..." /></label>
+            <label>Заголовок (для embed, опц.)<input type="text" name="title" placeholder="Важное" /></label>
+            <label>Сообщение<textarea name="content" rows="4" placeholder="Текст сообщения..." required></textarea></label>
+            <label class="switch"><input type="checkbox" name="asEmbed" /> Оформить как embed</label>
+            <button class="btn" type="submit">Отправить через вебхук</button>
+          </form>
+          <p class="muted hint">Из Discord: <code>!webhook &lt;#канал&gt; &lt;текст&gt;</code> или <code>/webhook</code> (с опциями имени/аватара).</p>
+        </section>
+      </div>
+
       <!-- ЛОГИ -->
       <div class="dash-panel" data-panel="logging">
         <section class="module" id="logging">
@@ -492,7 +514,7 @@
             <fieldset>
               <legend>Что логировать</legend>
               <div class="checks">
-                <% [['messageDelete','Удаление сообщений'],['messageEdit','Редактирование'],['memberJoin','Входы'],['memberLeave','Выходы'],['channelCreate','Создание канала'],['channelDelete','Удаление канала'],['channelUpdate','Изменение канала'],['roleCreate','Создание роли'],['roleDelete','Удаление роли'],['roleUpdate','Изменение роли'],['memberBan','Баны'],['memberUnban','Разбаны'],['memberKick','Кики'],['webhookUpdate','Вебхуки'],['guildUpdate','Изменение сервера'],['voice','Голосовые'],['ticketOpen','Открытие тикета'],['ticketClose','Закрытие тикета']].forEach(function(e){ %>
+                <% [['messageDelete','Удаление сообщений'],['messageEdit','Редактирование'],['memberJoin','Входы'],['memberLeave','Выходы'],['channelCreate','Создание канала'],['channelDelete','Удаление канала'],['channelUpdate','Изменение канала'],['roleCreate','Создание роли'],['roleDelete','Удаление роли'],['roleUpdate','Изменение роли'],['memberRole','Выдача/снятие ролей участникам'],['memberBan','Баны'],['memberUnban','Разбаны'],['memberKick','Кики'],['webhookUpdate','Вебхуки'],['guildUpdate','Изменение сервера'],['voice','Голосовые (вход/выход/перемещения)'],['ticketOpen','Открытие тикета'],['ticketClose','Закрытие тикета']].forEach(function(e){ %>
                   <label class="switch"><input type="checkbox" name="ev_<%= e[0] %>" <%= settings.logging.events[e[0]] ? 'checked' : '' %> /> <%= e[1] %></label>
                 <% }) %>
               </div>

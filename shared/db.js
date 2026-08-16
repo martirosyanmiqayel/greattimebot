@@ -76,7 +76,7 @@ function defaultSettings() {
         messageDelete: true, messageEdit: true, memberJoin: true, memberLeave: true,
         channelCreate: true, channelDelete: true, channelUpdate: true,
         roleCreate: true, roleDelete: true, roleUpdate: true,
-        memberBan: true, memberUnban: true, memberKick: true,
+        memberBan: true, memberUnban: true, memberKick: true, memberRole: true,
         webhookUpdate: true, guildUpdate: true,
         voice: true, ticketOpen: true, ticketClose: true
       }

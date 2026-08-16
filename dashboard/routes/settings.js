@@ -94,7 +94,7 @@ const LOG_EVENTS = [
   'messageDelete', 'messageEdit', 'memberJoin', 'memberLeave',
   'channelCreate', 'channelDelete', 'channelUpdate',
   'roleCreate', 'roleDelete', 'roleUpdate',
-  'memberBan', 'memberUnban', 'memberKick', 'webhookUpdate', 'guildUpdate',
+  'memberBan', 'memberUnban', 'memberKick', 'memberRole', 'webhookUpdate', 'guildUpdate',
   'voice', 'ticketOpen', 'ticketClose'
 ];
 const LOG_CATEGORIES = ['messages', 'members', 'roles', 'voice', 'moderation', 'tickets', 'server'];
@@ -293,6 +293,24 @@ router.post('/tickets', async (req, res) => {
     }
   });
   res.redirect(`/dashboard/${req.guild.id}?saved=tickets#tickets`);
+});
+
+// ---- Отправка сообщения через вебхук ----
+router.post('/webhook-send', async (req, res) => {
+  const b = req.body;
+  const channelId = (b.channelId || '').replace(/\D/g, '');
+  const content = (b.content || '').trim();
+  if (!channelId || !content) return res.redirect(`/dashboard/${req.guild.id}?saved=wh_error#webhook`);
+  try {
+    const payload = { username: (b.name || '').trim() || undefined, avatar_url: (b.avatar || '').trim() || undefined };
+    if (b.asEmbed === 'on') payload.embeds = [{ description: content.slice(0, 4000), color: 0xe21d18, title: (b.title || '').trim() || undefined }];
+    else payload.content = content.slice(0, 2000);
+    await discord.sendWebhookMessage(channelId, payload);
+    res.redirect(`/dashboard/${req.guild.id}?saved=webhook#webhook`);
+  } catch (err) {
+    console.error('[dashboard] webhook-send:', err.message);
+    res.redirect(`/dashboard/${req.guild.id}?saved=wh_error#webhook`);
+  }
 });
 
 // ---- Reaction roles: создать панель (бот постит сообщение и вешает реакции) ----

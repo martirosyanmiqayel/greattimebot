@@ -79,4 +79,28 @@ async function buildSnapshot(guildId, guildName) {
   };
 }
 
-module.exports = { botFetch, postMessage, addReaction, parseEmoji, getChannels, getRoles, buildSnapshot };
+/** Находит вебхук с токеном в канале или создаёт новый (по токену бота). */
+async function getOrCreateWebhook(channelId) {
+  const r = await botFetch(`/channels/${channelId}/webhooks`);
+  if (r.ok) {
+    const hooks = await r.json();
+    const mine = Array.isArray(hooks) && hooks.find((h) => h.token);
+    if (mine) return mine;
+  }
+  const c = await botFetch(`/channels/${channelId}/webhooks`, { method: 'POST', body: JSON.stringify({ name: 'GreatTime' }) });
+  if (!c.ok) throw new Error(`create webhook ${c.status}: ${await c.text()}`);
+  return c.json();
+}
+
+/** Отправить сообщение через вебхук из панели. */
+async function sendWebhookMessage(channelId, { username, avatar_url, content, embeds }) {
+  const hook = await getOrCreateWebhook(channelId);
+  const r = await fetch(`${API}/webhooks/${hook.id}/${hook.token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: username || undefined, avatar_url: avatar_url || undefined, content, embeds, allowed_mentions: { parse: ['users', 'roles'] } })
+  });
+  if (!r.ok) throw new Error(`webhook send ${r.status}: ${await r.text()}`);
+}
+
+module.exports = { botFetch, postMessage, addReaction, parseEmoji, getChannels, getRoles, buildSnapshot, sendWebhookMessage };

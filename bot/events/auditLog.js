@@ -50,9 +50,59 @@ function changesText(entry) {
   return parts.length ? parts.join('\n').slice(0, 1024) : null;
 }
 
+/** Выдача/снятие ролей участнику — кто, кому, какие роли (канал 'roles'). */
+async function logMemberRole(entry, guild) {
+  let settings;
+  try { settings = await db.getSettings(guild.id); } catch { return; }
+  if (!settings.logging.enabled || settings.logging.events.memberRole === false) return;
+  const added = ((entry.changes || []).find((c) => c.key === '$add') || {}).new || [];
+  const removed = ((entry.changes || []).find((c) => c.key === '$remove') || {}).new || [];
+  if (!added.length && !removed.length) return;
+  const embed = new EmbedBuilder().setTitle('🎭 Роли участника изменены').setColor(0xfaa61a).setTimestamp()
+    .addFields(
+      { name: 'Участник', value: `<@${entry.targetId}>`, inline: true },
+      { name: 'Кто изменил', value: entry.executorId ? `<@${entry.executorId}>` : 'неизвестно', inline: true }
+    );
+  if (added.length) embed.addFields({ name: '➕ Выдал роль', value: added.map((r) => `<@&${r.id}>`).join(' ') });
+  if (removed.length) embed.addFields({ name: '➖ Снял роль', value: removed.map((r) => `<@&${r.id}>`).join(' ') });
+  sendCategoryLog(guild, settings, 'roles', embed);
+  await db.addActionLog(guild.id, 'memberRole', entry.executorId, entry.targetId, { added: added.map((r) => r.id), removed: removed.map((r) => r.id) });
+}
+
+/** Перемещение/отключение участников в голосовых модератором (канал 'voice'). */
+async function logVoiceMod(entry, guild, kind) {
+  let settings;
+  try { settings = await db.getSettings(guild.id); } catch { return; }
+  if (!settings.logging.enabled || !settings.logging.events.voice) return;
+  const count = (entry.extra && entry.extra.count) || 1;
+  const chan = entry.extra && entry.extra.channel;
+  const who = entry.executorId ? `<@${entry.executorId}>` : 'неизвестно';
+  let embed;
+  if (kind === 'move') {
+    embed = new EmbedBuilder().setTitle('🔀 Участников переместили в голосовом').setColor(0xfaa61a).setTimestamp()
+      .addFields(
+        { name: 'Кто перекинул', value: who, inline: true },
+        { name: 'Куда', value: chan ? `<#${chan.id}>` : '—', inline: true },
+        { name: 'Сколько', value: `${count}`, inline: true }
+      );
+  } else {
+    embed = new EmbedBuilder().setTitle('🔇 Участников отключили от голосового').setColor(0xed4245).setTimestamp()
+      .addFields(
+        { name: 'Кто отключил', value: who, inline: true },
+        { name: 'Сколько', value: `${count}`, inline: true }
+      );
+  }
+  sendCategoryLog(guild, settings, 'voice', embed);
+}
+
 module.exports = {
   name: 'guildAuditLogEntryCreate',
   async execute(entry, guild) {
+    // Спец-случаи: изменение ролей участника и перемещение/отключение в голосовых.
+    if (entry.action === AuditLogEvent.MemberRoleUpdate) return logMemberRole(entry, guild);
+    if (entry.action === AuditLogEvent.MemberMove) return logVoiceMod(entry, guild, 'move');
+    if (entry.action === AuditLogEvent.MemberDisconnect) return logVoiceMod(entry, guild, 'disconnect');
+
     const info = MAP[entry.action];
     if (!info) return;
     let settings;
