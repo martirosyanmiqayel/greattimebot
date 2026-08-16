@@ -1,7 +1,8 @@
 'use strict';
 
-const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+const { PermissionFlagsBits } = require('discord.js');
 const db = require('../../shared/db');
+const { buildPanel } = require('../services/tickets');
 
 module.exports = [
   {
@@ -25,16 +26,8 @@ module.exports = [
     description: 'Отправить панель тикетов в этот канал',
     permission: PermissionFlagsBits.ManageGuild,
     async run(ctx) {
-      const t = ctx.settings.tickets;
-      if (!t.enabled) return ctx.error('Модуль тикетов выключен — включи его на дашборде.');
-      const embed = new EmbedBuilder()
-        .setTitle(t.panelTitle || '🎫 Поддержка')
-        .setDescription(t.panelDescription || 'Нажми на кнопку ниже, чтобы открыть тикет.')
-        .setColor(0x5865f2);
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('ticket_create').setLabel(t.panelButtonLabel || 'Открыть тикет').setStyle(ButtonStyle.Primary).setEmoji('🎫')
-      );
-      await ctx.channel.send({ embeds: [embed], components: [row] });
+      if (!ctx.settings.tickets.enabled) return ctx.error('Модуль тикетов выключен — включи его на дашборде.');
+      await ctx.channel.send(buildPanel(ctx.settings));
       await ctx.message.delete().catch(() => {});
     }
   }

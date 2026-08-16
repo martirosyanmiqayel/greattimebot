@@ -161,7 +161,10 @@ function defaultSettings() {
       panelDescription: 'Нажми на кнопку ниже, чтобы открыть тикет. Мы поможем!',
       panelButtonLabel: 'Открыть тикет',
       welcomeMessage: 'Спасибо за обращение! Опишите проблему, скоро ответим.',
-      closeMessage: 'Тикет закрывается через 5 секунд...'
+      closeMessage: 'Тикет закрывается через 5 секунд...',
+      // Типы обращений (меню выбора). Если пусто — обычная кнопка.
+      selectPlaceholder: 'Выберите тип обращения',
+      types: []  // [{ label, emoji, description, message }]
     }
   };
 }

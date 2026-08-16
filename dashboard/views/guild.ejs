@@ -515,12 +515,32 @@
             </div>
             <label>Заголовок панели<input type="text" name="panelTitle" value="<%= settings.tickets.panelTitle %>" /></label>
             <label>Описание панели<textarea name="panelDescription" rows="2"><%= settings.tickets.panelDescription %></textarea></label>
-            <label>Текст на кнопке<input type="text" name="panelButtonLabel" value="<%= settings.tickets.panelButtonLabel %>" /></label>
-            <label>Приветствие внутри тикета<textarea name="ticketMessage" rows="2"><%= settings.tickets.welcomeMessage %></textarea></label>
+            <label>Текст на кнопке (если без типов)<input type="text" name="panelButtonLabel" value="<%= settings.tickets.panelButtonLabel %>" /></label>
+            <label>Приветствие внутри тикета (если без типов)<textarea name="ticketMessage" rows="2"><%= settings.tickets.welcomeMessage %></textarea></label>
             <label>Сообщение при закрытии<input type="text" name="closeMessage" value="<%= settings.tickets.closeMessage %>" /></label>
+
+            <fieldset>
+              <legend>Типы обращений (меню выбора)</legend>
+              <small class="muted">Если добавить типы — на панели будет <b>меню «Выберите тип обращения»</b> вместо простой кнопки. У каждого типа свой текст, который бот пишет в тикете. Пусто = обычная кнопка.</small>
+              <label>Подсказка меню<input type="text" name="selectPlaceholder" value="<%= settings.tickets.selectPlaceholder || 'Выберите тип обращения' %>" /></label>
+              <div class="dyn-rows" data-dyn="ty">
+                <% var tys = settings.tickets.types || []; var tyn = Math.max(tys.length + 1, 2); for (var i = 0; i < tyn; i++) { var ty = tys[i] || {}; %>
+                  <fieldset class="dyn-row">
+                    <div class="grid3">
+                      <label>Название типа<input type="text" name="ty_label" value="<%= ty.label || '' %>" placeholder="Жалоба" /></label>
+                      <label>Эмодзи (опц.)<input type="text" name="ty_emoji" value="<%= ty.emoji || '' %>" placeholder="⚠️" /></label>
+                      <label>Подпись в меню (опц.)<input type="text" name="ty_desc" value="<%= ty.description || '' %>" placeholder="Пожаловаться на игрока" /></label>
+                    </div>
+                    <label>Текст в тикете для этого типа<textarea name="ty_msg" rows="2" placeholder="Опишите, на кого жалоба и что случилось."><%= ty.message || '' %></textarea></label>
+                  </fieldset>
+                <% } %>
+              </div>
+              <button type="button" class="btn ghost small" data-add="ty">+ ещё тип</button>
+            </fieldset>
+
             <button class="btn" type="submit">Сохранить тикеты</button>
           </form>
-          <p class="muted">Отправить панель в канал: команда <code>/ticket-panel</code>. Закрыть тикет: кнопка «Закрыть» или <code>/close</code>.</p>
+          <p class="muted">Отправить панель в канал: команда <code>/ticket-panel</code> или <code>!ticketpanel</code>. Закрыть тикет: кнопка «Закрыть» или <code>/close</code>.</p>
         </section>
       </div>
 

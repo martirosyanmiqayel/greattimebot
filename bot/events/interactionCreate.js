@@ -50,16 +50,25 @@ module.exports = {
     }
 
     if (interaction.isButton()) {
-      if (interaction.customId === 'ticket_create') return openTicket(interaction);
+      if (interaction.customId === 'ticket_create') return openTicket(interaction, {});
       if (interaction.customId === 'ticket_close') return closeTicket(interaction);
+    }
+
+    if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_type') {
+      return openTicket(interaction, { typeIndex: parseInt(interaction.values[0], 10) });
     }
   }
 };
 
-async function openTicket(interaction) {
+async function openTicket(interaction, opts = {}) {
   const guild = interaction.guild;
   const settings = await db.getSettings(guild.id);
   const cfg = settings.tickets;
+
+  // Выбранный тип обращения (если панель — меню).
+  const type = (opts.typeIndex != null && cfg.types) ? cfg.types[opts.typeIndex] : null;
+  const welcomeMessage = (type && type.message) || cfg.welcomeMessage;
+  const typeLabel = type ? type.label : null;
 
   const existing = await db.findOpenTicket(guild.id, interaction.user.id);
   if (existing) {
@@ -74,8 +83,9 @@ async function openTicket(interaction) {
     overwrites.push({ id: cfg.supportRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
   }
 
+  const baseName = typeLabel ? `${typeLabel}-${interaction.user.username}` : `ticket-${interaction.user.username}`;
   const channel = await guild.channels.create({
-    name: `ticket-${interaction.user.username}`.slice(0, 90),
+    name: baseName.toLowerCase().replace(/[^a-zа-я0-9-]+/gi, '-').slice(0, 90),
     type: ChannelType.GuildText,
     parent: cfg.categoryId || undefined,
     permissionOverwrites: overwrites
@@ -91,7 +101,9 @@ async function openTicket(interaction) {
   const closeRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId('ticket_close').setLabel('Закрыть тикет').setStyle(ButtonStyle.Danger).setEmoji('🔒')
   );
-  const embed = new EmbedBuilder().setTitle('Тикет открыт').setDescription(cfg.welcomeMessage).setColor(0x5865f2);
+  const embed = new EmbedBuilder()
+    .setTitle(typeLabel ? `Тикет: ${typeLabel}` : 'Тикет открыт')
+    .setDescription(welcomeMessage).setColor(0x5865f2);
 
   await channel.send({
     content: `${interaction.user}${cfg.supportRoleId ? ` <@&${cfg.supportRoleId}>` : ''}`,

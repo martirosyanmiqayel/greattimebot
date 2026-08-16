@@ -261,6 +261,22 @@ router.post('/whitelist/remove', async (req, res) => {
 // ---- Тикеты (+ тексты) ----
 router.post('/tickets', async (req, res) => {
   const b = req.body;
+  // Типы обращений: параллельные массивы ty_label[], ty_emoji[], ty_desc[], ty_msg[].
+  const labels = arr(b.ty_label);
+  const emojis = arr(b.ty_emoji);
+  const descs = arr(b.ty_desc);
+  const msgs = arr(b.ty_msg);
+  const types = [];
+  for (let i = 0; i < labels.length; i++) {
+    const label = (labels[i] || '').trim();
+    if (!label) continue;
+    types.push({
+      label: label.slice(0, 100),
+      emoji: (emojis[i] || '').trim() || null,
+      description: (descs[i] || '').trim().slice(0, 100) || null,
+      message: (msgs[i] || '').trim() || 'Спасибо за обращение! Опишите проблему.'
+    });
+  }
   await db.updateSettings(req.guild.id, {
     tickets: {
       enabled: bool(b.tickets_enabled),
@@ -270,8 +286,10 @@ router.post('/tickets', async (req, res) => {
       panelTitle: b.panelTitle || '',
       panelDescription: b.panelDescription || '',
       panelButtonLabel: b.panelButtonLabel || 'Открыть тикет',
+      selectPlaceholder: b.selectPlaceholder || 'Выберите тип обращения',
       welcomeMessage: b.ticketMessage || '',
-      closeMessage: b.closeMessage || ''
+      closeMessage: b.closeMessage || '',
+      types
     }
   });
   res.redirect(`/dashboard/${req.guild.id}?saved=tickets#tickets`);
