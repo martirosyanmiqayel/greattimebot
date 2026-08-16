@@ -2,10 +2,14 @@
 
 <section class="page-head">
   <div class="bot-hero">
+    <div class="bot-logo-wrap">
+      <img class="bot-logo" src="/logo.png" alt="GreatTime"
+           onerror="var w=this.closest('.bot-logo-wrap'); if(w) w.style.display='none'; this.remove();" />
+    </div>
     <% if (bot && bot.avatar) { %>
       <img class="bot-avatar" src="<%= bot.avatar %>" alt="avatar" />
     <% } else { %>
-      <div class="bot-avatar fallback">🎉</div>
+      <div class="bot-avatar fallback">🔥</div>
     <% } %>
     <div>
       <h1><%= bot ? bot.name : 'GreatTime Bot' %></h1>

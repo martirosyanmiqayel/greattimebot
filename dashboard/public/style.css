@@ -14,9 +14,13 @@
   --border: #3a2213;
   --border-2: #5c3117;
   --edge: #7a3f18;
-  --text: #ffeede;
-  --muted: #cba887;
-  --faint: #8a6a52;
+  --text: #fbeee2;
+  --muted: #d4b295;   /* повышен контраст для читаемости (≈5.2:1 на панелях) */
+  --faint: #9a7a60;
+
+  /* Шкала отступов 4/8 (дизайн-система) */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
 
   --red: #ff2a00;
   --orange: #ff7b12;
@@ -33,8 +37,15 @@
   --radius: 6px;
   --radius-sm: 4px;
   --shadow: 0 22px 46px -22px rgba(0, 0, 0, 0.92);
-  --glow-lava: 0 0 26px -4px var(--glow);
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --glow-lava: 0 0 22px -6px var(--glow);            /* мягче — премиум, не gaudy */
+  --ring: 0 0 0 3px rgba(255, 123, 18, 0.55);        /* видимый фокус (a11y) */
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Доступность: видимый фокус на всех интерактивных (skill §1 CRITICAL). */
+a:focus-visible, button:focus-visible, .btn:focus-visible, .side-item:focus-visible,
+input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: none; box-shadow: var(--ring); border-radius: var(--radius-sm);
 }
 
 * { box-sizing: border-box; }
@@ -173,7 +184,10 @@ a { color: var(--orange); }
 .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 16px; margin-top: 46px; perspective: 1200px; }
 .card { position: relative; overflow: hidden; background: var(--panel); border: 1px solid var(--border); border-left: 3px solid transparent; border-radius: var(--radius); padding: 24px; transform-style: preserve-3d; transition: transform .28s cubic-bezier(.2,.8,.2,1), border-color .2s, box-shadow .2s; }
 .card:hover { transform: translateY(-7px) rotateX(7deg) rotateY(-7deg); border-color: var(--edge); border-left-color: var(--orange); box-shadow: var(--shadow), var(--glow-lava); }
-.card-ic { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 15px; background: rgba(255, 123, 18, 0.13); border: 1px solid rgba(255, 123, 18, 0.28); border-radius: var(--radius-sm); transform: translateZ(28px); }
+.card-ic { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; color: var(--orange); background: rgba(255, 123, 18, 0.12); border: 1px solid rgba(255, 123, 18, 0.26); border-radius: var(--radius-sm); transform: translateZ(28px); }
+.card-ic svg { width: 24px; height: 24px; filter: drop-shadow(0 0 8px rgba(255, 123, 18, 0.35)); }
+.step-num { width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; font-weight: 900; font-size: 1.3rem; color: #2a0a00; background: var(--lava); border-radius: var(--radius-sm); box-shadow: var(--glow-lava); transform: translateZ(28px); }
+.steps-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .card h3 { margin: 0 0 8px; font-size: 1.04rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; }
 .card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
 
@@ -303,6 +317,31 @@ code { background: var(--panel-3); padding: 2px 7px; border-radius: 3px; font-si
 .steps code { font-size: 0.82em; }
 
 .footer { text-align: center; color: var(--faint); padding: 32px; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; border-top: 1px solid var(--border); margin-top: 44px; }
+
+/* ---------------- Появление при скролле ---------------- */
+.js .reveal { opacity: 0; }
+.js .reveal.in { opacity: 1; transition: opacity .7s ease; }
+
+/* ---------------- Блик по кнопке ---------------- */
+.btn { position: relative; overflow: hidden; }
+.btn::before { content: ""; position: absolute; top: 0; left: -70%; width: 45%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 245, 220, 0.5), transparent); transform: skewX(-22deg); transition: left .55s ease; pointer-events: none; }
+.btn:hover::before { left: 130%; }
+
+/* ---------------- Уникальный курсор ---------------- */
+.cursor-dot, .cursor-ring { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 99999; will-change: transform; transition: opacity .2s; }
+.cursor-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 12px 3px var(--glow); }
+.cursor-ring { width: 34px; height: 34px; border: 2px solid rgba(255, 123, 18, 0.85); border-radius: 50%; transition: width .18s ease, height .18s ease, background .18s, border-color .18s, opacity .2s; }
+.cursor-ring.big { width: 54px; height: 54px; background: rgba(255, 123, 18, 0.1); border-color: var(--gold); }
+.cursor-ring.down { width: 24px; height: 24px; border-color: var(--red); }
+.cursor-spark { position: fixed; width: 5px; height: 5px; border-radius: 50%; pointer-events: none; z-index: 99998; box-shadow: 0 0 8px 2px var(--glow); transform: translate(-50%, -50%); animation: spark .65s ease-out forwards; }
+@keyframes spark { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.2); } }
+.has-cursor, .has-cursor body { cursor: none; }
+.has-cursor a, .has-cursor button, .has-cursor .btn, .has-cursor .side-item, .has-cursor label, .has-cursor .card, .has-cursor .chip { cursor: none; }
+.has-cursor input, .has-cursor textarea, .has-cursor select { cursor: text; }
+
+/* ---------------- Лого на странице «О боте» ---------------- */
+.bot-logo-wrap { flex: none; }
+.bot-logo { width: 108px; height: 108px; object-fit: contain; border-radius: 20px; filter: drop-shadow(0 10px 34px rgba(255, 90, 0, 0.5)); animation: floaty 5s ease-in-out infinite; }
 
 /* ---------------- Responsive ---------------- */
 @media (max-width: 860px) {

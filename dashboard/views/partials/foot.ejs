@@ -2,5 +2,68 @@
   <footer class="footer">
     <p>GreatTime Bot — панель управления. Настройки применяются ботом без перезапуска.</p>
   </footer>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.classList.add('js');
+      var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Появление блоков при прокрутке (устойчиво: rect + scroll + страховка).
+      if (!reduce) {
+        var els = document.querySelectorAll('.card, .cmd, .cta-banner, .section-head, .guild-card, .hero-stats div, .stat, .module');
+        els.forEach(function (el) { el.classList.add('reveal'); });
+        var reveal = function () {
+          var vh = innerHeight || document.documentElement.clientHeight;
+          els.forEach(function (el) {
+            if (!el.classList.contains('in') && el.getBoundingClientRect().top < vh * 0.92) el.classList.add('in');
+          });
+        };
+        reveal();
+        addEventListener('scroll', reveal, { passive: true });
+        addEventListener('resize', reveal);
+        // Страховка: ничто не должно остаться невидимым.
+        setTimeout(function () { els.forEach(function (el) { el.classList.add('in'); }); }, 2500);
+      }
+
+      // Уникальный курсор (только мышь).
+      if (matchMedia('(hover:hover) and (pointer:fine)').matches && !reduce) {
+        root.classList.add('has-cursor');
+        var dot = document.createElement('div'); dot.className = 'cursor-dot';
+        var ring = document.createElement('div'); ring.className = 'cursor-ring';
+        document.body.appendChild(dot); document.body.appendChild(ring);
+        var mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my, lastSpark = 0;
+        var sparkColors = ['#ffc61a', '#ff8c1a', '#ff3a00'];
+        addEventListener('mousemove', function (e) {
+          mx = e.clientX; my = e.clientY;
+          dot.style.transform = 'translate(' + mx + 'px,' + my + 'px) translate(-50%,-50%)';
+          // След из искр (с троттлингом).
+          var now = performance.now();
+          if (now - lastSpark > 32) {
+            lastSpark = now;
+            var s = document.createElement('div'); s.className = 'cursor-spark';
+            s.style.left = mx + 'px'; s.style.top = my + 'px';
+            s.style.background = sparkColors[(Math.random() * 3) | 0];
+            s.style.setProperty('--dx', (Math.random() * 22 - 11).toFixed(0) + 'px');
+            s.style.setProperty('--dy', (Math.random() * 18 + 8).toFixed(0) + 'px');
+            document.body.appendChild(s);
+            setTimeout(function () { s.remove(); }, 650);
+          }
+        });
+        (function loop() {
+          rx += (mx - rx) * 0.2; ry += (my - ry) * 0.2;
+          ring.style.transform = 'translate(' + rx + 'px,' + ry + 'px) translate(-50%,-50%)';
+          requestAnimationFrame(loop);
+        })();
+        var sel = 'a, button, .btn, .side-item, .card, .guild-card, .chip, label.switch, input, textarea, select';
+        addEventListener('mouseover', function (e) { if (e.target.closest(sel)) ring.classList.add('big'); });
+        addEventListener('mouseout', function (e) { if (e.target.closest(sel)) ring.classList.remove('big'); });
+        addEventListener('mousedown', function () { ring.classList.add('down'); });
+        addEventListener('mouseup', function () { ring.classList.remove('down'); });
+        addEventListener('mouseleave', function () { dot.style.opacity = ring.style.opacity = '0'; });
+        addEventListener('mouseenter', function () { dot.style.opacity = ring.style.opacity = ''; });
+      }
+    })();
+  </script>
 </body>
 </html>
