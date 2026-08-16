@@ -161,17 +161,18 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:fo
 .guild-icon-fallback { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--accent), var(--accent-2)); font-size: 1.7rem; font-weight: 800; color: #1a0d03; }
 
 /* ---------------- Guild settings: dashboard ---------------- */
-.dash { display: grid; grid-template-columns: 250px 1fr; gap: 26px; margin-top: 20px; align-items: start; }
-.dash-side { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 4px; }
+.dash { display: block; margin-top: 20px; }
+.dash-side { position: sticky; top: 65px; z-index: 20; margin-bottom: 16px; }
+.dash-side .side-head { display: none; }
 .side-head { display: flex; align-items: center; gap: 12px; padding: 13px; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 .side-head img, .side-ic { width: 42px; height: 42px; border-radius: 11px; object-fit: cover; flex: none; }
 .side-ic { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #1a0d03; font-weight: 800; font-size: 1.15rem; }
 .side-head strong { display: block; font-size: 0.95rem; line-height: 1.2; }
 .side-head span { font-size: 0.76rem; color: var(--muted); }
-.dash-nav { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; }
-.nav-group-label { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); padding: 12px 10px 5px; }
-.nav-group-label:first-child { padding-top: 4px; }
-.side-item { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; border: none; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-weight: 500; font-size: 0.9rem; padding: 9px 11px; border-radius: 10px; transition: background .16s, color .16s; }
+.dash-nav { display: flex; flex-direction: row; gap: 2px; overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; }
+.dash-nav::-webkit-scrollbar { height: 6px; }
+.nav-group-label { display: none; }
+.side-item { display: flex; align-items: center; gap: 8px; width: auto; white-space: nowrap; flex: none; text-align: left; border: none; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-weight: 500; font-size: 0.88rem; padding: 9px 13px; border-radius: 9px; transition: background .16s, color .16s; }
 .side-item span.ic { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; flex: none; color: inherit; }
 .side-item span.ic svg { width: 18px; height: 18px; }
 .side-item:hover { background: var(--surface-2); color: var(--text); }
