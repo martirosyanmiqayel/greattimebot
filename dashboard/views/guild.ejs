@@ -72,13 +72,25 @@
   <!-- Контент -->
   <div class="dash-main">
     <div class="overview">
-      <% [
-        ['🛡️','Anti-Crash', settings.anticrash.enabled], ['💾','Backup', settings.backup.enabled],
-        ['⭐','XP', settings.xp.enabled], ['🔨','Модерация', settings.moderation.enabled],
-        ['🤖','Автомод', settings.automod.enabled], ['👋','Приветствия', settings.welcome.enabled],
-        ['📜','Логи', settings.logging.enabled], ['🎫','Тикеты', settings.tickets.enabled]
-      ].forEach(function(m){ %>
-        <span class="chip <%= m[2] ? 'on' : 'off' %>"><i></i><%= m[0] %> <%= m[1] %></span>
+      <%
+        var csvg = function(p){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; };
+        var cIcons = {
+          anticrash: csvg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'),
+          backup: csvg('<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>'),
+          xp: csvg('<path d="M12 2l3 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.9 21l1.2-6.8-5-4.9 6.9-1z"/>'),
+          moderation: csvg('<path d="M14 6l4 4"/><path d="M3 21l8.5-8.5"/><path d="M13 3l8 8-3 3-8-8z"/>'),
+          automod: csvg('<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 3v4M15 3v4M9 13h.01M15 13h.01"/>'),
+          welcome: csvg('<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>'),
+          logging: csvg('<circle cx="4" cy="6" r="1.4"/><circle cx="4" cy="12" r="1.4"/><circle cx="4" cy="18" r="1.4"/><path d="M9 6h12M9 12h12M9 18h12"/>'),
+          tickets: csvg('<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/>')
+        };
+        [
+          ['anticrash','Anti-Crash', settings.anticrash.enabled], ['backup','Backup', settings.backup.enabled],
+          ['xp','XP', settings.xp.enabled], ['moderation','Модерация', settings.moderation.enabled],
+          ['automod','Автомод', settings.automod.enabled], ['welcome','Приветствия', settings.welcome.enabled],
+          ['logging','Логи', settings.logging.enabled], ['tickets','Тикеты', settings.tickets.enabled]
+        ].forEach(function(m){ %>
+        <span class="chip <%= m[2] ? 'on' : 'off' %>"><span class="ic"><%- cIcons[m[0]] %></span><i></i><%= m[1] %></span>
       <% }) %>
     </div>
 
@@ -89,7 +101,7 @@
       <!-- ANTI-CRASH -->
       <div class="dash-panel active" data-panel="anticrash">
         <section class="module" id="anticrash">
-          <h2>🛡️ Anti-Crash — анти-нюк защита</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> Anti-Crash — анти-нюк защита</h2>
           <p class="muted">Бот в реальном времени читает аудит-лог сервера. Как только <b>не доверенный</b> человек делает что-то опасное — бот <b>наказывает</b> его, <b>откатывает</b> изменение и (если включено) <b>пишет владельцу</b>. Ниже расписано, что за что отвечает.</p>
           <div class="notice"><b>Важно:</b> чтобы всё работало, у бота должны быть права <code>View Audit Log</code>, <code>Manage Channels</code>, <code>Manage Roles</code>, <code>Manage Server</code>, <code>Ban/Kick/Moderate Members</code>, а его роль — <b>выше</b> ролей нарушителей. И включи <b>💾 Backup</b> — из него бот восстанавливает удалённые каналы/роли.</div>
 
@@ -160,7 +172,7 @@
             <button class="btn" type="submit">Сохранить Anti-Crash</button>
           </form>
 
-          <h3>✅ Whitelist (доверенные пользователи)</h3>
+          <h3>Whitelist (доверенные пользователи)</h3>
           <form method="POST" action="/dashboard/<%= guild.id %>/whitelist/add" class="inline-add">
             <input type="text" name="userId" placeholder="ID пользователя" />
             <button class="btn small" type="submit">Добавить</button>
@@ -189,7 +201,7 @@
       <!-- BACKUP -->
       <div class="dash-panel" data-panel="backup">
         <section class="module" id="backup">
-          <h2>💾 Backup структуры сервера</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span> Backup структуры сервера</h2>
           <p class="muted">Снимок каналов/ролей/прав. Нужен для отката Anti-Crash и ручного восстановления.</p>
           <% if (saved === 'backup_created') { %><div class="notice success">Backup создан ✓</div><% } %>
           <% if (saved === 'backup_deleted') { %><div class="notice success">Backup удалён ✓</div><% } %>
@@ -233,7 +245,7 @@
       <!-- XP -->
       <div class="dash-panel" data-panel="xp">
         <section class="module" id="xp">
-          <h2>⭐ XP и уровни</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.9 21l1.2-6.8-5-4.9 6.9-1z"/></svg></span> XP и уровни</h2>
           <form method="POST" action="/dashboard/<%= guild.id %>/xp">
             <label class="switch"><input type="checkbox" name="xp_enabled" <%= settings.xp.enabled ? 'checked' : '' %> /> Включить XP-систему</label>
             <div class="grid2">
@@ -275,7 +287,7 @@
       <!-- СТАФФ-РОЛИ -->
       <div class="dash-panel" data-panel="staff">
         <section class="module" id="staff">
-          <h2>👮 Стафф-роли — доступ к командам</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M20.5 20a5.5 5.5 0 0 0-3.5-5.1"/></svg></span> Стафф-роли — доступ к командам</h2>
           <p class="muted">Выбери роли, которые считаются «стаффом» (администрация/модерация). Команды модерации и настроек будут доступны только обладателям этих ролей. У кого роли нет — бот ответит: «<%= settings.messages.noPermission %>».</p>
           <div class="notice"><b>Защита от блокировки:</b> владелец сервера и участники с правом <b>Администратор</b> имеют доступ всегда, даже без стафф-роли — чтобы случайной настройкой не закрыть доступ самому себе.</div>
           <form method="POST" action="/dashboard/<%= guild.id %>/staff">
@@ -324,7 +336,7 @@
       <!-- МОДЕРАЦИЯ -->
       <div class="dash-panel" data-panel="moderation">
         <section class="module" id="moderation">
-          <h2>🔨 Модерация и автомод</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l4 4"/><path d="M3 21l8.5-8.5"/><path d="M13 3l8 8-3 3-8-8z"/></svg></span> Модерация и автомод</h2>
           <form method="POST" action="/dashboard/<%= guild.id %>/moderation">
             <label class="switch"><input type="checkbox" name="mod_enabled" <%= settings.moderation.enabled ? 'checked' : '' %> /> Включить модерацию</label>
             <div class="grid2">
@@ -365,7 +377,7 @@
       <!-- ПРИВЕТСТВИЯ -->
       <div class="dash-panel" data-panel="welcome">
         <section class="module" id="welcome">
-          <h2>👋 Приветствия и прощания</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></span> Приветствия и прощания</h2>
           <form method="POST" action="/dashboard/<%= guild.id %>/welcome">
             <label class="switch"><input type="checkbox" name="welcome_enabled" <%= settings.welcome.enabled ? 'checked' : '' %> /> Включить приветствия</label>
             <label>Канал приветствий (ID)<input type="text" name="welcomeChannelId" value="<%= settings.welcome.channelId || '' %>" /></label>
@@ -383,7 +395,7 @@
       <!-- АВТОРОЛИ -->
       <div class="dash-panel" data-panel="autorole">
         <section class="module" id="autorole">
-          <h2>🎭 Автороли</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M4 20a5 5 0 0 1 10 0"/><path d="M19 8v6M22 11h-6"/></svg></span> Автороли</h2>
           <form method="POST" action="/dashboard/<%= guild.id %>/autorole">
             <label class="switch"><input type="checkbox" name="autorole_enabled" <%= settings.autorole.enabled ? 'checked' : '' %> /> Выдавать роли новичкам автоматически</label>
             <label>ID ролей (по одному на строку)<textarea name="roleIds" rows="3"><%= (settings.autorole.roleIds || []).join('\n') %></textarea></label>
@@ -395,7 +407,7 @@
       <!-- РЕАКЦИЯ-РОЛИ -->
       <div class="dash-panel" data-panel="reactionroles">
         <section class="module" id="reactionroles">
-          <h2>✨ Роли по реакции</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg></span> Роли по реакции</h2>
           <p class="muted">Бот опубликует сообщение в указанном канале и повесит реакции. Кто нажмёт реакцию — получит роль; уберёт — роль снимется.</p>
           <form method="POST" action="/dashboard/<%= guild.id %>/reactionroles">
             <div class="grid2">
@@ -442,7 +454,7 @@
       <!-- СВОИ КОМАНДЫ -->
       <div class="dash-panel" data-panel="customcommands">
         <section class="module" id="customcommands">
-          <h2>🧩 Свои команды</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3a2 2 0 0 1 4 0v1h3a2 2 0 0 1 2 2v3h1a2 2 0 0 1 0 4h-1v3a2 2 0 0 1-2 2h-3v-1a2 2 0 0 0-4 0v1H6a2 2 0 0 1-2-2v-3H3a2 2 0 0 1 0-4h1V6a2 2 0 0 1 2-2h3z"/></svg></span> Свои команды</h2>
           <p class="muted">Создай команду с любым именем и текстом ответа. Вызов — с префиксом сервера (напр. <code>!правила</code>). В ответе доступны <code>{user}</code> <code>{username}</code> <code>{server}</code> <code>{count}</code>.</p>
           <form method="POST" action="/dashboard/<%= guild.id %>/customcommands/add">
             <div class="grid2">
@@ -477,7 +489,7 @@
       <!-- ТЕКСТЫ -->
       <div class="dash-panel" data-panel="messages">
         <section class="module" id="messages">
-          <h2>💬 Тексты ответов бота</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> Тексты ответов бота</h2>
           <p class="muted">Общие ответы команд можно изменить под себя. Приветствия — вкладка 👋, ЛС при наказаниях — 🔨 Модерация, повышение уровня — ⭐ XP, тикеты — 🎫.</p>
           <form method="POST" action="/dashboard/<%= guild.id %>/messages">
             <label>Недостаточно прав<input type="text" name="noPermission" value="<%= settings.messages.noPermission %>" /></label>
@@ -491,7 +503,7 @@
       <!-- ВЕБХУК -->
       <div class="dash-panel" data-panel="webhook">
         <section class="module" id="webhook">
-          <h2>🪝 Отправка через вебхук</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></span> Отправка через вебхук</h2>
           <p class="muted">Бот отправит сообщение в канал через вебхук — можно задать <b>своё имя и аватар</b> отправителя. Нужно право бота «Управление вебхуками».</p>
           <% if (saved === 'webhook') { %><div class="notice success">Сообщение отправлено ✓</div><% } %>
           <% if (saved === 'wh_error') { %><div class="notice warn">Не удалось отправить. Проверь ID канала и права бота (Управление вебхуками).</div><% } %>
@@ -513,7 +525,7 @@
       <!-- ЛОГИ -->
       <div class="dash-panel" data-panel="logging">
         <section class="module" id="logging">
-          <h2>📜 Логирование</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="6" r="1.4"/><circle cx="4" cy="12" r="1.4"/><circle cx="4" cy="18" r="1.4"/><path d="M9 6h12M9 12h12M9 18h12"/></svg></span> Логирование</h2>
           <p class="muted">Можно разделить логи по каналам: роли — в один канал, войс — в другой, модерация/участники/тикеты — каждый в свой. Если для категории канал не задан — лог идёт в <b>общий</b>.</p>
           <form method="POST" action="/dashboard/<%= guild.id %>/logging">
             <label class="switch"><input type="checkbox" name="logging_enabled" <%= settings.logging.enabled ? 'checked' : '' %> /> Включить логи</label>
@@ -553,7 +565,7 @@
       <!-- ТИКЕТЫ -->
       <div class="dash-panel" data-panel="tickets">
         <section class="module" id="tickets">
-          <h2>🎫 Тикеты</h2>
+          <h2><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12"/></svg></span> Тикеты</h2>
           <form method="POST" action="/dashboard/<%= guild.id %>/tickets">
             <label class="switch"><input type="checkbox" name="tickets_enabled" <%= settings.tickets.enabled ? 'checked' : '' %> /> Включить тикеты</label>
             <div class="grid2">
