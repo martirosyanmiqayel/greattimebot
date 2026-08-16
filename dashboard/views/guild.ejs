@@ -71,27 +71,36 @@
 
   <!-- Контент -->
   <div class="dash-main">
-    <div class="overview">
-      <%
-        var csvg = function(p){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; };
-        var cIcons = {
-          anticrash: csvg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'),
-          backup: csvg('<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>'),
-          xp: csvg('<path d="M12 2l3 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.9 21l1.2-6.8-5-4.9 6.9-1z"/>'),
-          moderation: csvg('<path d="M14 6l4 4"/><path d="M3 21l8.5-8.5"/><path d="M13 3l8 8-3 3-8-8z"/>'),
-          automod: csvg('<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 3v4M15 3v4M9 13h.01M15 13h.01"/>'),
-          welcome: csvg('<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>'),
-          logging: csvg('<circle cx="4" cy="6" r="1.4"/><circle cx="4" cy="12" r="1.4"/><circle cx="4" cy="18" r="1.4"/><path d="M9 6h12M9 12h12M9 18h12"/>'),
-          tickets: csvg('<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/>')
-        };
-        [
-          ['anticrash','Anti-Crash', settings.anticrash.enabled], ['backup','Backup', settings.backup.enabled],
-          ['xp','XP', settings.xp.enabled], ['moderation','Модерация', settings.moderation.enabled],
-          ['automod','Автомод', settings.automod.enabled], ['welcome','Приветствия', settings.welcome.enabled],
-          ['logging','Логи', settings.logging.enabled], ['tickets','Тикеты', settings.tickets.enabled]
-        ].forEach(function(m){ %>
-        <span class="chip <%= m[2] ? 'on' : 'off' %>"><span class="ic"><%- cIcons[m[0]] %></span><i></i><%= m[1] %></span>
-      <% }) %>
+    <%
+      var rsvg = function(p){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; };
+      var modsOn = [settings.anticrash.enabled, settings.backup.enabled, settings.xp.enabled, settings.moderation.enabled, settings.automod.enabled, settings.welcome.enabled, settings.logging.enabled, settings.tickets.enabled].filter(Boolean).length;
+    %>
+    <!-- Шапка сервера (как в панели хостинга) -->
+    <div class="srv-head">
+      <div class="srv-id">
+        <% if (guild.icon) { %>
+          <img class="srv-ic" src="https://cdn.discordapp.com/icons/<%= guild.id %>/<%= guild.icon %>.png?size=64" alt="" />
+        <% } else { %>
+          <div class="srv-ic letter"><%= (guild.name || '?').charAt(0).toUpperCase() %></div>
+        <% } %>
+        <div>
+          <div class="srv-name"><%= guild.name %></div>
+          <div class="srv-meta">
+            <span class="pow <%= botPresent ? 'on' : 'off' %>"><span class="pdot"></span><%= botPresent ? 'Онлайн' : 'Оффлайн' %></span>
+            <span class="sep">•</span> префикс <code><%= settings.prefix || '!' %></code>
+            <span class="sep">•</span> ID <code><%= guild.id %></code>
+          </div>
+        </div>
+      </div>
+      <% if (inviteUrl) { %><a class="btn small ghost" href="<%= inviteUrl %>" target="_blank" rel="noopener">Пригласить бота</a><% } %>
+    </div>
+
+    <!-- Карточки-ресурсы -->
+    <div class="srv-stats">
+      <div class="rcard"><span class="rc-ic"><%- rsvg('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>') %></span><div><b><%= modsOn %> / 8</b><span>Модулей включено</span></div></div>
+      <div class="rcard"><span class="rc-ic"><%- rsvg('<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>') %></span><div><b><%= backups ? backups.length : 0 %></b><span>Backup-ов</span></div></div>
+      <div class="rcard"><span class="rc-ic"><%- rsvg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>') %></span><div><b><%= whitelist ? whitelist.length : 0 %></b><span>В whitelist</span></div></div>
+      <div class="rcard"><span class="rc-ic"><%- rsvg('<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>') %></span><div><b><%= reactionRoles ? reactionRoles.length : 0 %></b><span>Reaction-ролей</span></div></div>
     </div>
 
     <p class="muted hint" style="margin-bottom:18px;">ID каналов/ролей: включи в Discord «Режим разработчика» (Настройки → Расширенные), затем ПКМ → «Копировать ID».</p>

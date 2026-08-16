@@ -187,6 +187,30 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:fo
 .chip.on i { background: var(--ok); box-shadow: 0 0 8px rgba(62, 216, 139, 0.7); }
 .chip.on .ic { color: var(--accent); }
 
+/* Панель хостинга: шапка сервера + карточки-ресурсы */
+.srv-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 16px 18px; margin-bottom: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.srv-id { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.srv-ic { width: 52px; height: 52px; border-radius: 13px; object-fit: cover; flex: none; }
+.srv-ic.letter { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #1a0d03; font-weight: 800; font-size: 1.4rem; }
+.srv-name { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.srv-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; font-size: 0.84rem; color: var(--muted); }
+.srv-meta code { font-size: 0.9em; }
+.srv-meta .sep { color: var(--faint); }
+.pow { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; }
+.pow .pdot { width: 8px; height: 8px; border-radius: 50%; }
+.pow.on { color: var(--ok); background: rgba(62, 216, 139, 0.12); }
+.pow.on .pdot { background: var(--ok); box-shadow: 0 0 8px rgba(62, 216, 139, 0.8); animation: floaty 2.4s ease-in-out infinite; }
+.pow.off { color: var(--danger); background: rgba(255, 93, 108, 0.12); }
+.pow.off .pdot { background: var(--danger); }
+
+.srv-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.rcard { display: flex; align-items: center; gap: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; transition: border-color .18s, transform .18s; }
+.rcard:hover { border-color: var(--border-2); transform: translateY(-2px); }
+.rc-ic { width: 40px; height: 40px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 11px; }
+.rc-ic svg { width: 21px; height: 21px; }
+.rcard b { display: block; font-size: 1.4rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+.rcard span { font-size: 0.8rem; color: var(--muted); }
+
 .dash-panels { display: block; }
 .dash-panel { display: none; flex-direction: column; gap: 18px; }
 .dash-panel.active { display: flex; animation: fadeUp .3s ease; }
