@@ -68,6 +68,13 @@ function defaultSettings() {
       enabled: false,
       roleIds: []
     },
+    // Connection Roles: если у участника есть дочерняя роль — выдать родительскую.
+    connectionRoles: [], // [{ parentId, childIds: [] }]
+    // Sticky Roles: вернуть роли, если участник вышел и вошёл снова.
+    stickyRoles: {
+      enabled: false,
+      roleIds: []  // пусто = запоминать все роли; иначе только эти
+    },
     logging: {
       enabled: false,
       channelId: null,           // общий канал (fallback, если для категории не задан свой)
@@ -174,6 +181,10 @@ function defaultSettings() {
       // Типы обращений (меню выбора). Если пусто — обычная кнопка.
       selectPlaceholder: 'Выберите тип обращения',
       types: []  // [{ label, emoji, description, message }]
+    },
+    // Счётчики-статистика: голосовые каналы с авто-обновляемым названием.
+    counters: {
+      channels: []  // [{ id, type, template }] — type: members|humans|bots|boosts|channels|roles
     }
   };
 }
@@ -490,9 +501,23 @@ async function listCustomCommands(g) {
   return data || [];
 }
 
+// ---- Sticky Roles ----
+async function saveStickyRoles(g, u, roleIds) {
+  const { error } = await supabase.from('sticky_roles')
+    .upsert({ guild_id: g, user_id: u, role_ids: roleIds, saved_at: Date.now() }, { onConflict: 'guild_id,user_id' });
+  if (error) console.error('[db] saveStickyRoles:', error.message);
+}
+async function getStickyRoles(g, u) {
+  const { data, error } = await supabase.from('sticky_roles').select('role_ids')
+    .eq('guild_id', g).eq('user_id', u).maybeSingle();
+  if (error) console.error('[db] getStickyRoles:', error.message);
+  return data && Array.isArray(data.role_ids) ? data.role_ids : [];
+}
+
 module.exports = {
   supabase, defaultSettings, getSettings, saveSettings, updateSettings,
   addCustomCommand, removeCustomCommand, getCustomCommand, listCustomCommands,
+  saveStickyRoles, getStickyRoles,
   addWarning, getWarnings, clearWarnings,
   openTicket, closeTicket, findOpenTicket,
   addReactionRole, findReactionRole, listReactionRoles, listReactionRolesForMessage, deleteReactionRole,

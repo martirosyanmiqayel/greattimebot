@@ -3,6 +3,7 @@ const { EmbedBuilder } = require('discord.js');
 const db = require('../../shared/db');
 const { fill } = require('../../shared/text');
 const { sendCategoryLog } = require('../../shared/modlog');
+const counters = require('../services/counters');
 
 module.exports = {
   name: 'guildMemberRemove',
@@ -22,5 +23,12 @@ module.exports = {
         .setDescription(`${member.user ? member.user.tag : member.id}`).setColor(0xed4245).setTimestamp();
       sendCategoryLog(member.guild, s, 'members', embed);
     }
+    // Sticky Roles: запоминаем роли участника, чтобы вернуть при повторном входе.
+    if (s.stickyRoles && s.stickyRoles.enabled && member.roles && member.roles.cache) {
+      let ids = member.roles.cache.filter((r) => r.id !== member.guild.id && !r.managed).map((r) => r.id);
+      if (s.stickyRoles.roleIds && s.stickyRoles.roleIds.length) ids = ids.filter((id) => s.stickyRoles.roleIds.includes(id));
+      if (ids.length) db.saveStickyRoles(member.guild.id, member.id, ids).catch(() => {});
+    }
+    counters.updateGuildCounters(member.guild).catch(() => {});
   }
 };

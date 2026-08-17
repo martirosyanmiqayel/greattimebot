@@ -4,6 +4,7 @@ const { ActivityType } = require('discord.js');
 const xpService = require('../services/xp');
 const backupService = require('../services/backup');
 const moderation = require('../services/moderation');
+const counters = require('../services/counters');
 
 module.exports = {
   name: 'ready',
@@ -21,6 +22,8 @@ module.exports = {
     setInterval(() => {
       moderation.sweepExpiredBans(client).catch((e) => console.error('[mod] sweepBans:', e.message));
     }, 60 * 1000);
+    // Счётчики-статистика (обновление раз в 10 минут).
+    counters.startCounterLoop(client);
 
     // Устойчивость: логируем проблемы соединения (discord.js сам переподключается).
     client.on('error', (e) => console.error('[bot] client error:', e.message));

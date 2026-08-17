@@ -103,4 +103,25 @@ async function sendWebhookMessage(channelId, { username, avatar_url, content, em
   if (!r.ok) throw new Error(`webhook send ${r.status}: ${await r.text()}`);
 }
 
-module.exports = { botFetch, postMessage, addReaction, parseEmoji, getChannels, getRoles, buildSnapshot, sendWebhookMessage };
+/** Число участников/бустов сервера (приблизительно, через with_counts). */
+async function getGuildCounts(guildId) {
+  const r = await botFetch(`/guilds/${guildId}?with_counts=true`);
+  if (r.ok) { const g = await r.json(); return { members: g.approximate_member_count || 0, boosts: g.premium_subscription_count || 0 }; }
+  return { members: 0, boosts: 0 };
+}
+
+/** Создать голосовой канал-счётчик (запрет заходить). Возвращает объект канала. */
+async function createVoiceChannel(guildId, name) {
+  const r = await botFetch(`/guilds/${guildId}/channels`, {
+    method: 'POST',
+    body: JSON.stringify({ name: String(name).slice(0, 100), type: 2, permission_overwrites: [{ id: guildId, type: 0, deny: '1048576' }] })
+  });
+  if (!r.ok) throw new Error(`create channel ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+async function deleteChannel(channelId) {
+  await botFetch(`/channels/${channelId}`, { method: 'DELETE' }).catch(() => {});
+}
+
+module.exports = { botFetch, postMessage, addReaction, parseEmoji, getChannels, getRoles, buildSnapshot, sendWebhookMessage, getGuildCounts, createVoiceChannel, deleteChannel };

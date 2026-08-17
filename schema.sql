@@ -125,6 +125,17 @@ create table if not exists backups (
 create index if not exists backups_idx on backups (guild_id, created_at desc);
 
 -- ============================================================
+-- Sticky Roles: сохранённые роли участника (вернуть при повторном входе).
+-- ============================================================
+create table if not exists sticky_roles (
+  guild_id  text   not null,
+  user_id   text   not null,
+  role_ids  jsonb  not null default '[]'::jsonb,
+  saved_at  bigint not null,
+  primary key (guild_id, user_id)
+);
+
+-- ============================================================
 -- Кастомные команды: name -> текст ответа (на сервер).
 -- ============================================================
 create table if not exists custom_commands (
@@ -152,3 +163,4 @@ alter table mod_actions    enable row level security;
 alter table action_logs    enable row level security;
 alter table backups        enable row level security;
 alter table custom_commands enable row level security;
+alter table sticky_roles    enable row level security;

@@ -97,6 +97,30 @@ router.post('/autorole', async (req, res) => {
   res.redirect(`/dashboard/${req.guild.id}?saved=autorole#autorole`);
 });
 
+// ---- Connection Roles ----
+router.post('/connectionroles', async (req, res) => {
+  const b = req.body;
+  const parents = arr(b.conn_parent);
+  const childrenBlocks = arr(b.conn_children);
+  const connectionRoles = [];
+  for (let i = 0; i < parents.length; i++) {
+    const parentId = (parents[i] || '').replace(/\D/g, '');
+    const childIds = lines(childrenBlocks[i]).map((x) => x.replace(/\D/g, '')).filter(Boolean);
+    if (parentId && childIds.length) connectionRoles.push({ parentId, childIds });
+  }
+  await db.updateSettings(req.guild.id, { connectionRoles });
+  res.redirect(`/dashboard/${req.guild.id}?saved=connectionroles#connectionroles`);
+});
+
+// ---- Sticky Roles ----
+router.post('/stickyroles', async (req, res) => {
+  const b = req.body;
+  await db.updateSettings(req.guild.id, {
+    stickyRoles: { enabled: bool(b.sticky_enabled), roleIds: lines(b.sticky_roleIds) }
+  });
+  res.redirect(`/dashboard/${req.guild.id}?saved=stickyroles#stickyroles`);
+});
+
 // ---- Логирование ----
 const LOG_EVENTS = [
   'messageDelete', 'messageEdit', 'memberJoin', 'memberLeave',
@@ -301,6 +325,34 @@ router.post('/tickets', async (req, res) => {
     }
   });
   res.redirect(`/dashboard/${req.guild.id}?saved=tickets#tickets`);
+});
+
+// ---- Счётчики-статистика ----
+const COUNTER_LABELS = { members: 'Участников', humans: 'Людей', bots: 'Ботов', boosts: 'Бустов', channels: 'Каналов', roles: 'Ролей' };
+router.post('/counters/create', async (req, res) => {
+  const type = COUNTER_LABELS[req.body.type] ? req.body.type : 'members';
+  const template = (req.body.template || '').trim() || '🧡・{label}: {count}';
+  try {
+    const counts = await discord.getGuildCounts(req.guild.id);
+    const val = (type === 'members' || type === 'humans') ? counts.members : (type === 'boosts' ? counts.boosts : 0);
+    const name = template.replace(/\{count\}/g, val).replace(/\{label\}/g, COUNTER_LABELS[type]);
+    const ch = await discord.createVoiceChannel(req.guild.id, name);
+    const settings = await db.getSettings(req.guild.id);
+    const channels = [...((settings.counters && settings.counters.channels) || []), { id: ch.id, type, template }];
+    await db.updateSettings(req.guild.id, { counters: { channels } });
+    res.redirect(`/dashboard/${req.guild.id}?saved=counter#counters`);
+  } catch (err) {
+    console.error('[dashboard] counter create:', err.message);
+    res.redirect(`/dashboard/${req.guild.id}?saved=counter_error#counters`);
+  }
+});
+router.post('/counters/delete', async (req, res) => {
+  const id = (req.body.id || '').replace(/\D/g, '');
+  const settings = await db.getSettings(req.guild.id);
+  const channels = ((settings.counters && settings.counters.channels) || []).filter((c) => c.id !== id);
+  await db.updateSettings(req.guild.id, { counters: { channels } });
+  if (id) await discord.deleteChannel(id);
+  res.redirect(`/dashboard/${req.guild.id}?saved=counter_deleted#counters`);
 });
 
 // ---- Отправка сообщения через вебхук ----

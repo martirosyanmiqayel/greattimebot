@@ -3,6 +3,7 @@ const { EmbedBuilder } = require('discord.js');
 const db = require('../../shared/db');
 const { fill } = require('../../shared/text');
 const { sendCategoryLog } = require('../../shared/modlog');
+const counters = require('../services/counters');
 
 module.exports = {
   name: 'guildMemberAdd',
@@ -23,6 +24,18 @@ module.exports = {
     if (s.autorole.enabled && Array.isArray(s.autorole.roleIds)) {
       for (const roleId of s.autorole.roleIds) member.roles.add(roleId).catch(() => {});
     }
+    // Sticky Roles: вернуть роли, которые были у участника до выхода.
+    if (s.stickyRoles && s.stickyRoles.enabled) {
+      const saved = await db.getStickyRoles(member.guild.id, member.id).catch(() => []);
+      if (saved.length) {
+        const me = member.guild.members.me;
+        const toAdd = saved.filter((id) => {
+          const r = member.guild.roles.cache.get(id);
+          return r && !r.managed && (!me || r.position < me.roles.highest.position);
+        });
+        if (toAdd.length) member.roles.add(toAdd, 'Sticky roles').catch(() => {});
+      }
+    }
     if (s.logging.enabled && s.logging.events.memberJoin) {
       const embed = new EmbedBuilder().setAuthor({ name: 'Участник зашёл', iconURL: member.user.displayAvatarURL() })
         .setDescription(`<@${member.id}> (${member.user.tag})`)
@@ -30,5 +43,6 @@ module.exports = {
         .setColor(0x57f287).setTimestamp();
       sendCategoryLog(member.guild, s, 'members', embed);
     }
+    counters.updateGuildCounters(member.guild).catch(() => {});
   }
 };
