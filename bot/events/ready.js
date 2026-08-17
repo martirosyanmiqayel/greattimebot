@@ -5,6 +5,7 @@ const xpService = require('../services/xp');
 const backupService = require('../services/backup');
 const moderation = require('../services/moderation');
 const counters = require('../services/counters');
+const giveaways = require('../services/giveaways');
 
 module.exports = {
   name: 'ready',
@@ -24,6 +25,8 @@ module.exports = {
     }, 60 * 1000);
     // Счётчики-статистика (обновление раз в 10 минут).
     counters.startCounterLoop(client);
+    // Розыгрыши: авто-завершение по таймеру.
+    giveaways.startLoop(client);
 
     // Устойчивость: логируем проблемы соединения (discord.js сам переподключается).
     client.on('error', (e) => console.error('[bot] client error:', e.message));

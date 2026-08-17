@@ -11,6 +11,7 @@ const {
 const db = require('../../shared/db');
 const staff = require('../services/staff');
 const ticketlog = require('../services/ticketlog');
+const giveaways = require('../services/giveaways');
 
 module.exports = {
   name: 'interactionCreate',
@@ -56,6 +57,7 @@ module.exports = {
     if (interaction.isButton()) {
       if (interaction.customId === 'ticket_create') return openTicket(interaction, {});
       if (interaction.customId === 'ticket_close') return closeTicket(interaction);
+      if (interaction.customId === 'gw_enter') return giveawayEntry(interaction);
     }
 
     if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_type') {
@@ -116,6 +118,19 @@ async function openTicket(interaction, opts = {}) {
   });
 
   await interaction.reply({ content: `Тикет создан: ${channel}`, ephemeral: true });
+}
+
+async function giveawayEntry(interaction) {
+  const g = await db.getGiveawayByMessage(interaction.message.id);
+  if (!g || g.ended || g.cancelled || Number(g.ends_at) <= Date.now()) {
+    return interaction.reply({ content: 'Этот розыгрыш уже завершён.', ephemeral: true });
+  }
+  const elig = giveaways.checkEligibility(g, interaction.member);
+  if (!elig.ok) return interaction.reply({ content: '⛔ ' + elig.reason, ephemeral: true });
+  const added = await db.addGiveawayEntry(g.id, interaction.user.id);
+  if (!added) return interaction.reply({ content: 'Ты уже участвуешь 🎉', ephemeral: true });
+  await interaction.reply({ content: '✅ Ты в игре! Удачи 🍀', ephemeral: true });
+  giveaways.refreshCount(interaction.client, g).catch(() => {});
 }
 
 async function closeTicket(interaction) {

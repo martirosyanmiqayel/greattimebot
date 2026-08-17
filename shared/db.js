@@ -514,10 +514,85 @@ async function getStickyRoles(g, u) {
   return data && Array.isArray(data.role_ids) ? data.role_ids : [];
 }
 
+// ---- Розыгрыши ----
+async function createGiveaway(g) {
+  const { data, error } = await supabase.from('giveaways').insert({
+    guild_id: g.guild_id, channel_id: g.channel_id, message_id: g.message_id || null,
+    prize: g.prize, winners: g.winners || 1, ends_at: g.ends_at, requirement: g.requirement || null,
+    required_roles: g.required_roles || [], excluded_roles: g.excluded_roles || [],
+    host_id: g.host_id || null, created_at: Date.now()
+  }).select('*').single();
+  if (error) console.error('[db] createGiveaway:', error.message);
+  return data || null;
+}
+async function setGiveawayMessage(id, messageId) {
+  const { error } = await supabase.from('giveaways').update({ message_id: messageId }).eq('id', id);
+  if (error) console.error('[db] setGiveawayMessage:', error.message);
+}
+async function getGiveawayByMessage(messageId) {
+  const { data, error } = await supabase.from('giveaways').select('*').eq('message_id', messageId).maybeSingle();
+  if (error) console.error('[db] getGiveawayByMessage:', error.message);
+  return data || null;
+}
+async function getGiveawayById(g, id) {
+  const { data, error } = await supabase.from('giveaways').select('*').eq('guild_id', g).eq('id', id).maybeSingle();
+  if (error) console.error('[db] getGiveawayById:', error.message);
+  return data || null;
+}
+async function listGuildGiveaways(g, activeOnly = true) {
+  let q = supabase.from('giveaways').select('*').eq('guild_id', g);
+  if (activeOnly) q = q.eq('ended', false);
+  const { data, error } = await q.order('ends_at', { ascending: true });
+  if (error) console.error('[db] listGuildGiveaways:', error.message);
+  return data || [];
+}
+async function listDueGiveaways() {
+  const { data, error } = await supabase.from('giveaways').select('*')
+    .eq('ended', false).lte('ends_at', Date.now());
+  if (error) console.error('[db] listDueGiveaways:', error.message);
+  return data || [];
+}
+async function finishGiveaway(id, winnerIds) {
+  const { error } = await supabase.from('giveaways').update({ ended: true, winner_ids: winnerIds || [] }).eq('id', id);
+  if (error) console.error('[db] finishGiveaway:', error.message);
+}
+async function setGiveawayWinners(id, winnerIds) {
+  const { error } = await supabase.from('giveaways').update({ winner_ids: winnerIds || [] }).eq('id', id);
+  if (error) console.error('[db] setGiveawayWinners:', error.message);
+}
+async function cancelGiveaway(id) {
+  const { error } = await supabase.from('giveaways').update({ ended: true, cancelled: true, winner_ids: [] }).eq('id', id);
+  if (error) console.error('[db] cancelGiveaway:', error.message);
+}
+async function addGiveawayEntry(giveawayId, userId) {
+  const { data, error } = await supabase.from('giveaway_entries')
+    .insert({ giveaway_id: giveawayId, user_id: userId, created_at: Date.now() })
+    .select('user_id').maybeSingle();
+  if (error) { if (error.code === '23505') return false; console.error('[db] addGiveawayEntry:', error.message); return false; }
+  return !!data;
+}
+async function hasGiveawayEntry(giveawayId, userId) {
+  const { data } = await supabase.from('giveaway_entries').select('user_id').eq('giveaway_id', giveawayId).eq('user_id', userId).maybeSingle();
+  return !!data;
+}
+async function getGiveawayEntries(giveawayId) {
+  const { data, error } = await supabase.from('giveaway_entries').select('user_id').eq('giveaway_id', giveawayId);
+  if (error) console.error('[db] getGiveawayEntries:', error.message);
+  return (data || []).map((r) => r.user_id);
+}
+async function countGiveawayEntries(giveawayId) {
+  const { count, error } = await supabase.from('giveaway_entries').select('*', { count: 'exact', head: true }).eq('giveaway_id', giveawayId);
+  if (error) console.error('[db] countGiveawayEntries:', error.message);
+  return count || 0;
+}
+
 module.exports = {
   supabase, defaultSettings, getSettings, saveSettings, updateSettings,
   addCustomCommand, removeCustomCommand, getCustomCommand, listCustomCommands,
   saveStickyRoles, getStickyRoles,
+  createGiveaway, setGiveawayMessage, getGiveawayByMessage, getGiveawayById, listGuildGiveaways,
+  listDueGiveaways, finishGiveaway, setGiveawayWinners, cancelGiveaway,
+  addGiveawayEntry, hasGiveawayEntry, getGiveawayEntries, countGiveawayEntries,
   addWarning, getWarnings, clearWarnings,
   openTicket, closeTicket, findOpenTicket,
   addReactionRole, findReactionRole, listReactionRoles, listReactionRolesForMessage, deleteReactionRole,

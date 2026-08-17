@@ -148,6 +148,36 @@ create table if not exists custom_commands (
 );
 
 -- ============================================================
+-- Розыгрыши (giveaways) + участники.
+-- ============================================================
+create table if not exists giveaways (
+  id             bigserial primary key,
+  guild_id       text    not null,
+  channel_id     text    not null,
+  message_id     text,
+  prize          text    not null,
+  winners        int     not null default 1,
+  ends_at        bigint  not null,
+  requirement    text,
+  required_roles jsonb   not null default '[]'::jsonb,
+  excluded_roles jsonb   not null default '[]'::jsonb,
+  host_id        text,
+  ended          boolean not null default false,
+  cancelled      boolean not null default false,
+  winner_ids     jsonb   not null default '[]'::jsonb,
+  created_at     bigint  not null
+);
+create index if not exists giveaways_active_idx on giveaways (ended, ends_at);
+create index if not exists giveaways_msg_idx on giveaways (message_id);
+
+create table if not exists giveaway_entries (
+  giveaway_id bigint not null,
+  user_id     text   not null,
+  created_at  bigint not null,
+  primary key (giveaway_id, user_id)
+);
+
+-- ============================================================
 -- RLS: доступ идёт только через service_role с сервера (бот/дашборд),
 -- который RLS обходит. Поэтому включаем RLS и НЕ создаём публичных политик —
 -- так anon-ключ не сможет читать/писать эти таблицы напрямую.
@@ -164,3 +194,5 @@ alter table action_logs    enable row level security;
 alter table backups        enable row level security;
 alter table custom_commands enable row level security;
 alter table sticky_roles    enable row level security;
+alter table giveaways        enable row level security;
+alter table giveaway_entries enable row level security;
