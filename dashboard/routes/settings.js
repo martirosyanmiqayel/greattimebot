@@ -55,7 +55,15 @@ router.post('/moderation', async (req, res) => {
       blockLinks: bool(b.blockLinks),
       maxMentions: parseInt(b.maxMentions, 10) || 0,
       punishment: b.punishment || 'delete',
-      noticeMessage: b.noticeMessage || ''
+      noticeMessage: b.noticeMessage || '',
+      ignoreRoleIds: lines(b.am_ignoreRoles),
+      ignoreChannelIds: lines(b.am_ignoreChannels),
+      exempt: {
+        words: lines(b.am_exempt_words),
+        invites: lines(b.am_exempt_invites),
+        links: lines(b.am_exempt_links),
+        mentions: lines(b.am_exempt_mentions)
+      }
     }
   });
   res.redirect(`/dashboard/${req.guild.id}?saved=moderation#moderation`);

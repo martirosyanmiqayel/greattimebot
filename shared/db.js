@@ -42,7 +42,16 @@ function defaultSettings() {
       maxMentions: 0,
       punishment: 'delete',
       // Текст короткого уведомления в канал. Плейсхолдеры: {user} {reason}
-      noticeMessage: '{user}, сообщение удалено: {reason}.'
+      noticeMessage: '{user}, сообщение удалено: {reason}.',
+      // Исключения (whitelist). Глобальные + отдельно на каждый фильтр (ID ролей).
+      ignoreRoleIds: [],     // роли, полностью исключённые из автомода
+      ignoreChannelIds: [],  // каналы без автомода
+      exempt: {
+        words: [],           // роли-исключения для фильтра слов
+        invites: [],         // роли-исключения для инвайтов
+        links: [],           // роли-исключения для ссылок
+        mentions: []         // роли-исключения для упоминаний
+      }
     },
     welcome: {
       enabled: false,

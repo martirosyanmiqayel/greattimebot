@@ -21,16 +21,23 @@ module.exports = {
     if (!s.automod.enabled) return;
     if (message.member && message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return;
 
+    // Whitelist: канал без автомода / роль, исключённая глобально.
+    const roles = message.member ? message.member.roles.cache : null;
+    const hasRole = (ids) => !!(roles && Array.isArray(ids) && ids.some((id) => roles.has(id)));
+    if (Array.isArray(s.automod.ignoreChannelIds) && s.automod.ignoreChannelIds.includes(message.channel.id)) return;
+    if (hasRole(s.automod.ignoreRoleIds)) return;
+
+    const ex = s.automod.exempt || {};
     const content = message.content.toLowerCase();
     let violation = null;
 
-    if (s.automod.blockedWords.length && s.automod.blockedWords.some((w) => w && content.includes(w.toLowerCase()))) {
+    if (!hasRole(ex.words) && s.automod.blockedWords.length && s.automod.blockedWords.some((w) => w && content.includes(w.toLowerCase()))) {
       violation = 'запрещённое слово';
-    } else if (s.automod.blockInvites && INVITE_RE.test(message.content)) {
+    } else if (!hasRole(ex.invites) && s.automod.blockInvites && INVITE_RE.test(message.content)) {
       violation = 'приглашение на другой сервер';
-    } else if (s.automod.blockLinks && LINK_RE.test(message.content)) {
+    } else if (!hasRole(ex.links) && s.automod.blockLinks && LINK_RE.test(message.content)) {
       violation = 'ссылка';
-    } else if (s.automod.maxMentions > 0 && message.mentions.users.size > s.automod.maxMentions) {
+    } else if (!hasRole(ex.mentions) && s.automod.maxMentions > 0 && message.mentions.users.size > s.automod.maxMentions) {
       violation = 'слишком много упоминаний';
     }
     if (!violation) return;

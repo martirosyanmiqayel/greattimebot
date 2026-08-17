@@ -378,6 +378,23 @@
               </label>
             </div>
             <label>Уведомление в канал (плейсхолдеры: {user} {reason})<input type="text" name="noticeMessage" value="<%= settings.automod.noticeMessage %>" /></label>
+
+            <fieldset>
+              <legend>Whitelist автомода — кого не наказывать (ID ролей/каналов, по одному на строку)</legend>
+              <div class="grid2">
+                <label>Игнорировать роли (весь автомод)<textarea name="am_ignoreRoles" rows="2"><%= (settings.automod.ignoreRoleIds || []).join('\n') %></textarea></label>
+                <label>Игнорировать каналы (весь автомод)<textarea name="am_ignoreChannels" rows="2"><%= (settings.automod.ignoreChannelIds || []).join('\n') %></textarea></label>
+              </div>
+              <small class="muted">Отдельный whitelist на каждый параметр — роли, которым этот фильтр разрешён:</small>
+              <% var amex = settings.automod.exempt || {}; %>
+              <div class="grid2">
+                <label>Запрещённые слова — исключить роли<textarea name="am_exempt_words" rows="2"><%= (amex.words || []).join('\n') %></textarea></label>
+                <label>Приглашения — исключить роли<textarea name="am_exempt_invites" rows="2"><%= (amex.invites || []).join('\n') %></textarea></label>
+                <label>Ссылки — исключить роли<textarea name="am_exempt_links" rows="2"><%= (amex.links || []).join('\n') %></textarea></label>
+                <label>Упоминания — исключить роли<textarea name="am_exempt_mentions" rows="2"><%= (amex.mentions || []).join('\n') %></textarea></label>
+              </div>
+            </fieldset>
+
             <button class="btn" type="submit">Сохранить модерацию</button>
           </form>
         </section>
